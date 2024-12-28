@@ -16,7 +16,7 @@ alias db='dotbare'
 
 setopt rm_star_silent
 export RANGER_LOAD_DEFAULT_RC=FALSE
-export PATH="$HOME/go/bin:$HOME/.gem/ruby/2.7.0/bin:$HOME/.local/bin/:$HOME/bin:$HOME/.cargo/bin:$PATH"
+export PATH="$HOME/go/bin:$HOME/.gem/ruby/2.7.0/bin:$HOME/.local/bin/:$HOME/bin:$HOME/.cargo/bin:/opt/nvim-linux64/bin:$PATH"
 export EDITOR='nvim'
 export VISUAL='nvim'
 export GIT_EDITOR='nvim'
