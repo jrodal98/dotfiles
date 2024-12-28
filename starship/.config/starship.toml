@@ -1,0 +1,36 @@
+# Get editor completions based on the config schema
+"$schema" = 'https://starship.rs/config-schema.json'
+
+# Use custom format
+format = """
+[┌─](bold pink)\
+$all\
+[└─](bold pink)$character"""
+
+# Disable the newline at the start of the prompt
+add_newline = false
+
+[username]
+style_user = "green bold"
+style_root = "black bold"
+format = "[$user]($style)"
+disabled = false
+show_always = true
+
+[hostname]
+ssh_only = false
+format =  "[@$hostname](bold green) "
+trim_at = ".companyname.com"
+disabled = false
+
+[character]
+success_symbol = "[>](bold green)"
+error_symbol = "[>](bold red)"
+vicmd_symbol = "[<](bold green)"
+
+[python]
+# Only use the `python3` binary to get the version.
+python_binary = "python3"
+
+[hg_branch]
+disabled = false
