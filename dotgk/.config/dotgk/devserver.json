@@ -1,0 +1,11 @@
+{
+  "groups": [
+    {
+      "type": "file",
+      "args": {
+        "path": "/etc/devserver.owners"
+      },
+      "condition": "eq"
+    }
+  ]
+}

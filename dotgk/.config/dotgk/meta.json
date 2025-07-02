@@ -1,0 +1,13 @@
+{
+  "groups": [
+    {
+      "type": "gatekeeper",
+      "args": [
+        {
+          "name": "devserver"
+        }
+      ],
+      "condition": "any"
+    }
+  ]
+}
