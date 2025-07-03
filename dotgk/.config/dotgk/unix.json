@@ -1,13 +1,13 @@
 {
   "groups": [
     {
-      "type": "gatekeeper",
+      "type": "os",
       "args": [
         {
-          "name": "devserver"
+          "target": "linux"
         },
         {
-          "name": "meta-laptop"
+          "target": "macos"
         }
       ],
       "condition": "any"
