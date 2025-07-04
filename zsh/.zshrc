@@ -1,4 +1,22 @@
+# zmodload zsh/zprof # uncomment top and bottom of file to profile startup
+if ! command -v dotgk &> /dev/null; then
+  curl -fsSL https://raw.githubusercontent.com/jrodal98/dotgk/refs/heads/master/install.sh | sh
+  dotgk sync --force
+fi
+
+passes_gk() {
+  case "$(dotgk get "$1")" in
+    true) return 0 ;;
+    *) return 1 ;;
+  esac
+}
+
 [ -f ~/.metarc.zsh ] && source ~/.metarc.zsh
+
+if passes_gk "server"; then
+  [[ $TMUX || ! -t 0 || $TERM_PROGRAM = vscode ]] || tmux $TMUX_OPTIONS new-session -As auto
+fi
+
 
 alias fuck='eval "sudo $(fc -ln -1)"'
 
@@ -52,3 +70,4 @@ fi
 
 [ -f ~/.fzf.zsh ] && source ~/.fzf.zsh
 touch "${HOME}/.env" && source "${HOME}/.env"
+# zprof # uncomment top and bottom of file to profile startup
