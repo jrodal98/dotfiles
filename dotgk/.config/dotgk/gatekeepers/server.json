@@ -4,10 +4,7 @@
       "type": "gatekeeper",
       "args": [
         {
-          "name": "meta-devserver"
-        },
-        {
-          "name": "meta-laptop"
+          "name": "meta/devserver"
         }
       ],
       "condition": "any"

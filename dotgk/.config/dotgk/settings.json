@@ -1,6 +1,6 @@
 {
   "enabled_cache_formats": [
-    "lua",
-    "shell"
+    "shell",
+    "lua"
   ]
 }

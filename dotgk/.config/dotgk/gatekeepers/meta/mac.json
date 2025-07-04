@@ -3,14 +3,14 @@
     {
       "type": "gatekeeper",
       "args": {
-          "name": "meta-laptop"
+          "name": "meta/laptop"
       },
       "condition": "eq"
     },
     {
       "type": "gatekeeper",
       "args": {
-          "name": "macos"
+          "name": "os/macos"
       },
       "condition": "eq"
     }
