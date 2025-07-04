@@ -7,7 +7,7 @@ if ! command -v dotgk &> /dev/null; then
   dotgk sync --force
 fi
 
-source ~/.config/dotgk/cache/cache.sh
+source ~/.config/dotgk/caches/dotgk.sh
 
 [ -f ~/.metarc.zsh ] && source ~/.metarc.zsh
 
