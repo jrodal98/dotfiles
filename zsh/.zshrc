@@ -11,7 +11,7 @@ source ~/.config/dotgk/caches/dotgk.sh
 
 [ -f ~/.metarc.zsh ] && source ~/.metarc.zsh
 
-if dotgk_check "server" 2>/dev/null; then
+if dotgk_check "server"; then
   [[ $TMUX || ! -t 0 || $TERM_PROGRAM = vscode ]] || tmux $TMUX_OPTIONS new-session -As auto
 fi
 
