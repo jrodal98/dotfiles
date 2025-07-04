@@ -34,7 +34,7 @@ export PYTHONWARNINGS="ignore"
 source "${HOME}/.zgen/zgen.zsh"
 
 # if the init script doesn't exist
-# If adding a new plugin, I may need to run zgen save manually
+# If adding a new plugin, I may need to run zgen reset
 if ! zgen saved; then
   zgen oh-my-zsh
 
