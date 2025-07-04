@@ -3,19 +3,15 @@ export PATH="$HOME/go/bin:$HOME/.gem/ruby/2.7.0/bin:$HOME/.local/bin/:$HOME/bin:
 
 if ! command -v dotgk &> /dev/null; then
   curl -fsSL https://raw.githubusercontent.com/jrodal98/dotgk/refs/heads/master/install.sh | sh
+  dotgk cache enable shell
   dotgk sync --force
 fi
 
-passes_gk() {
-  case "$(dotgk get "$1")" in
-    true) return 0 ;;
-    *) return 1 ;;
-  esac
-}
+source ~/.config/dotgk/cache/cache.sh
 
 [ -f ~/.metarc.zsh ] && source ~/.metarc.zsh
 
-if passes_gk "server"; then
+if dotgk_check "server" 2>/dev/null; then
   [[ $TMUX || ! -t 0 || $TERM_PROGRAM = vscode ]] || tmux $TMUX_OPTIONS new-session -As auto
 fi
 

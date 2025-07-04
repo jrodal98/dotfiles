@@ -1,0 +1,3 @@
+{
+  "enabled_cache_formats": ["lua", "shell", "javascript"]
+}
