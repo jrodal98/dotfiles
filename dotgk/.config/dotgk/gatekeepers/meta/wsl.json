@@ -1,0 +1,9 @@
+{
+  "groups": [
+    {
+      "type": "file",
+      "args": [{ "path": "/mnt/c/chef/outputs/cpe_info.json" }],
+      "condition": "any"
+    }
+  ]
+}

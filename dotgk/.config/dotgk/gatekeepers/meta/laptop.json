@@ -4,7 +4,8 @@
       "type": "file",
       "args": [
         {"path": "/var/chef/outputs/cpe_info.json"},
-        {"path": "C:/chef/outputs/cpe_info.json"}
+        {"path": "C:/chef/outputs/cpe_info.json"},
+        {"path": "/mnt/c/chef/outputs/cpe_info.json"}
       ],
       "condition": "any"
     }
