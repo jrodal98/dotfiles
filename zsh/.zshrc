@@ -1,5 +1,5 @@
 # zmodload zsh/zprof # uncomment top and bottom of file to profile startup
-export PATH="$HOME/go/bin:$HOME/.gem/ruby/2.7.0/bin:$HOME/.local/bin/:$HOME/bin:$HOME/.cargo/bin:/opt/nvim-linux64/bin:$PATH"
+export PATH="$HOME/go/bin:$HOME/.gem/ruby/2.7.0/bin:$HOME/.local/bin/:$HOME/bin:$HOME/.cargo/bin:/opt/nvim-linux-x86_64/bin:$PATH"
 
 if ! command -v dotgk &> /dev/null; then
   curl -fsSL https://raw.githubusercontent.com/jrodal98/dotgk/refs/heads/master/install.sh | sh
