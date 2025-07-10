@@ -1,0 +1,25 @@
+[user]
+  name = Jacob Rodal
+  email = github@jrodal.com
+[core]
+  pager = delta
+[interactive]
+  diffFilter = delta --color-only
+[delta]
+  features = line-numbers decorations
+  whitespace-error-style = 22 reverse
+  side-by-side = true
+[delta "decorations"]
+  commit-decoration-style = bold yellow box ul
+  file-style = bold yellow ul
+  file-decoration-style = none
+  hunk-header-decoration-style = yellow box
+[diff]
+  colorMoved = default
+[mergetool]
+  prompt = false
+[push]
+	autoSetupRemote = true
+[alias]
+	smartlog = log --graph -- pretty=format:'commit: %C(bold red)%h%Creset %C(red)<%H>%Creset %C(bold magenta)%d %Creset%ndate: %C(bold yellow)%cd %Creset%C(yellow)%cr%Creset%nauthor: %C(bold blue)%an%Creset %C(blue)<%ae>%Creset%n%C(cyan)%s%n%Creset'
+	sl = !git smartlog
