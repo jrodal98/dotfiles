@@ -8,6 +8,16 @@
         }
       ],
       "condition": "any"
+    },
+    {
+      "type": "hostname",
+      "args": [
+        {
+          "target": "iris"
+        }
+      ],
+      "condition": "any"
     }
-  ]
+  ],
+  "condition": "any"
 }
