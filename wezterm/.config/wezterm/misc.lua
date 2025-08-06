@@ -6,27 +6,19 @@ local misc = {}
 misc.exit_behavior = "Close"
 misc.audible_bell = "Disabled"
 
-local hostname = wezterm.hostname()
+misc.launch_menu = {}
+misc.default_domain = nil
+if wezterm.target_triple == "x86_64-pc-windows-msvc" then
+   misc.default_domain = "WSL:Ubuntu"
+   table.insert(misc.launch_menu, {
+      label = "PowerShell",
+      args = { "/mnt/c/Windows/System32/WindowsPowerShell/v1.0//powershell.exe", "-NoLogo" },
+   })
 
-local default_progs = {
-   ["jrodal-850"] = { "pwsh", "-l" },
-   ["jrodal-257"] = { "C:/Users/jrodal/.config/wezterm/bin/windows_default_shell.cmd" },
-}
-
-if default_progs[hostname] then
-   misc.default_prog = default_progs[hostname]
-else
-   misc.default_prog = nil
-end
-
-local default_domains = {
-   ["PW08WPZH"] = "WSL:Ubuntu",
-}
-
-if default_domains[hostname] then
-   misc.default_domain = default_domains[hostname]
-else
-   misc.default_domain = nil
+   table.insert(misc.launch_menu, {
+      label = "Pwsh",
+      args = { "/mnt/c/Program Files/PowerShell/7//pwsh.exe", "-NoLogo" },
+   })
 end
 
 return misc

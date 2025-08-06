@@ -22,8 +22,8 @@ local config = {
    -- prevents terminal hanging when exiting with ctrl-d
    exit_behavior = misc.exit_behavior,
    audible_bell = misc.audible_bell,
-   default_prog = misc.default_prog,
    default_domain = misc.default_domain,
+   launch_menu = misc.launch_menu,
 }
 
 return config
