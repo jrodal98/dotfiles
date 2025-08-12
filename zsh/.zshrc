@@ -18,6 +18,7 @@ fi
 
 
 alias fuck='eval "sudo $(fc -ln -1)"'
+alias gsl='git smartlog'
 
 setopt rm_star_silent
 
