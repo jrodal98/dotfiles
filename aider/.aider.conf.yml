@@ -211,7 +211,6 @@ model: meta_llama/Llama-4-Maverick-17B-128E-Instruct-FP8
 
 ## Enable/disable adding .aider* to .gitignore (default: True)
 gitignore: true
-
 ## Enable/disable the addition of files listed in .gitignore to Aider's editing scope.
 #add-gitignore-files: false
 
