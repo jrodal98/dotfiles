@@ -7,6 +7,8 @@ local bindings = {}
 
 -- default bindings: https://wezfurlong.org/wezterm/config/default-keys.html
 bindings.keys = {
+   -- Enable Shift+Enter for multi-line input in Claude Code
+   { key = "\r", mods = "SHIFT", action = wezterm.action { SendString = "\n" } },
    { key = "+", mods = "SUPER|SHIFT", action = "IncreaseFontSize" },
    { key = "+", mods = "CTRL|SHIFT", action = "IncreaseFontSize" },
    {
