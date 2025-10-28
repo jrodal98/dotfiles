@@ -211,7 +211,6 @@ model: meta_llama/Llama-4-Maverick-17B-128E-Instruct-FP8
 
 ## Enable/disable adding .aider* to .gitignore (default: True)
 gitignore: true
-
 ## Enable/disable the addition of files listed in .gitignore to Aider's editing scope.
 #add-gitignore-files: false
 
@@ -222,7 +221,7 @@ gitignore: true
 #subtree-only: false
 
 ## Enable/disable auto commit of LLM changes (default: True)
-#auto-commits: true
+auto-commits: false
 
 ## Enable/disable commits when repo is found dirty (default: True)
 #dirty-commits: true
