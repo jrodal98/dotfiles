@@ -11,6 +11,9 @@ local frecli_regex = "frecli cas download-action .*:145"
 local buck_target_regex = "\\b([\\w]+//[\\w/]+:[\\w.-]+)\\b"
 local windows_path_regex = "\\b([a-zA-Z]:\\\\[\\w .-]+(?:\\\\[\\w .-]+)*)\\b"
 
+-- jrodal_1_c99fA_HzOS_University_unit__2__APIs_unit_local
+local devmate_trajectory_regex = [[(jrodal_.+?_local)]]
+
 -- quick select mode (CTRL-SHIFT-SPACE)
 select.quick_select_patterns = {
    -- match urls
@@ -26,6 +29,8 @@ select.quick_select_patterns = {
    frecli_regex,
    buck_target_regex,
    windows_path_regex,
+   -- devmate trajectories
+   devmate_trajectory_regex,
 }
 
 select.hyperlink_rules = wezterm.default_hyperlink_rules()
@@ -38,6 +43,11 @@ table.insert(select.hyperlink_rules, {
 table.insert(select.hyperlink_rules, {
    regex = github_project_regex,
    format = "https://www.github.com/$1/$3",
+})
+
+table.insert(select.hyperlink_rules, {
+   regex = devmate_trajectory_regex,
+   format = "https://www.internalfb.com/intern/devai/devmate/inspector/$1_0",
 })
 
 return select
