@@ -20,6 +20,6 @@ else
 end
 
 -- Configures whether the window has a title bar and/or resizable border.
-aesthetics.window_decorations = "RESIZE"
+aesthetics.window_decorations = "INTEGRATED_BUTTONS|RESIZE"
 
 return aesthetics
