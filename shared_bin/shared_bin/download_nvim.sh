@@ -7,7 +7,7 @@ if [ -z "$1" ]; then
 fi
 
 # Normalize version to start with 'v'
-version=${1/#v/v}
+version="v${1#v}"
 
 # Define installation directories
 SOFTWARE_DIR="$HOME/software"
