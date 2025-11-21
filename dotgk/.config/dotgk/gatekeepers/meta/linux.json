@@ -8,12 +8,17 @@
         },
         {
           "name": "meta/laptop"
-        },
-        {
-          "name": "meta/linux"
         }
       ],
       "condition": "any"
+    },
+    {
+      "type": "os",
+      "args": {
+        "target": "linux"
+      },
+      "condition": "eq"
     }
-  ]
+  ],
+  "condition": "all"
 }
