@@ -1,0 +1,47 @@
+[metadata]
+name = "tree"
+description = "Browse directory tree and select files/folders"
+requirements = ["tree"]
+
+[source]
+# Show tree visualization with colors and structure
+# -C = colorize, -f = full path, --noreport = no summary
+# This shows the tree structure on left but includes full paths
+command = "tree -C -f --noreport"
+# Use ansi to preserve colors in the display
+ansi = true
+# Extract the path (last field after all the tree characters)
+output = "{strip_ansi|split: :-1}"
+
+[preview]
+# Show context for the selected path
+# Extract the actual path from the tree line first
+command = '''
+# First strip all ANSI color codes, then extract the path
+path=$(echo '{}' | /usr/bin/sed 's/\x1b\[[0-9;]*m//g' | /usr/bin/sed 's/^[^.]*\(\.\)/\1/')
+if [ -d "$path" ]; then
+  /usr/bin/tree -C -L 3 "$path"
+elif [ -f "$path" ]; then
+  /usr/bin/bat -n --color=always "$path" 2>/dev/null || /usr/bin/cat "$path"
+else
+  echo "Could not preview: $path"
+fi
+'''
+
+[ui.preview_panel]
+size = 60
+
+[keybindings]
+shortcut = "f4"
+ctrl-e = "actions:edit"
+ctrl-o = "actions:open"
+
+[actions.edit]
+description = "Edit the selected file/directory with $EDITOR"
+command = "${EDITOR:-vim} '{}'"
+mode = "execute"
+
+[actions.open]
+description = "Open with default application (xdg-open)"
+command = "xdg-open '{}' 2>/dev/null || open '{}' 2>/dev/null || echo 'No open command available'"
+mode = "fork"
