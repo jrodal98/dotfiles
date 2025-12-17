@@ -5,9 +5,10 @@ requirements = ["tree"]
 
 [source]
 # Show tree visualization with colors and structure
-# -C = colorize, -f = full path, --noreport = no summary
+# -C = colorize, -f = full path, --noreport = no summary, -I = ignore pattern
 # This shows the tree structure on left but includes full paths
-command = "tree -C -f --noreport"
+# Toggle between normal and hidden files with ctrl-t
+command = ["tree -C -f -I .git --noreport", "tree -C -f -a -I .git --noreport"]
 # Use ansi to preserve colors in the display
 ansi = true
 # Extract the path (last field after all the tree characters)
@@ -20,7 +21,7 @@ command = '''
 # First strip all ANSI color codes, then extract the path
 path=$(echo '{}' | /usr/bin/sed 's/\x1b\[[0-9;]*m//g' | /usr/bin/sed 's/^[^.]*\(\.\)/\1/')
 if [ -d "$path" ]; then
-  /usr/bin/tree -C -L 3 "$path"
+  /usr/bin/tree -C -a -I .git -L 3 "$path"
 elif [ -f "$path" ]; then
   /usr/bin/bat -n --color=always "$path" 2>/dev/null || /usr/bin/cat "$path"
 else
