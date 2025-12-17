@@ -70,5 +70,10 @@ if command -v direnv &> /dev/null; then
 fi
 
 [ -f ~/.fzf.zsh ] && source ~/.fzf.zsh
+
+if command -v tv &> /dev/null; then
+  eval "$(tv init zsh)"
+fi
+
 touch "${HOME}/.env" && source "${HOME}/.env"
 # zprof # uncomment top and bottom of file to profile startup
