@@ -39,10 +39,10 @@ ctrl-o = "actions:open"
 
 [actions.edit]
 description = "Edit the selected file/directory with $EDITOR"
-command = "${EDITOR:-vim} '{}'"
+command = '''filepath=$(echo '{}' | /usr/bin/sed 's/\x1b\[[0-9;]*m//g' | /usr/bin/sed 's/^[^.]*\(\.\)/\1/'); nvim "$filepath"'''
 mode = "execute"
 
 [actions.open]
 description = "Open with default application (xdg-open)"
-command = "xdg-open '{}' 2>/dev/null || open '{}' 2>/dev/null || echo 'No open command available'"
+command = '''path=$(echo '{}' | sed 's/\x1b\[[0-9;]*m//g' | sed 's/^[^.]*\(\.\)/\1/'); xdg-open "$path" 2>/dev/null || open "$path" 2>/dev/null || echo 'No open command available' '''
 mode = "fork"
