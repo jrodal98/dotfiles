@@ -16,10 +16,21 @@ output = "{strip_ansi|split: :-1}"
 
 [preview]
 # Show context for the selected path
-# Extract the actual path from the tree line first
-command = '''
-# First strip all ANSI color codes, then extract the path
-filepath=$(echo '{}' | sed 's/\x1b\[[0-9;]*m//g' | sed 's/^[^.]*\(\.\)/\1/')
+# Use template operations to extract the path
+# Cycle between showing and hiding hidden files in preview with ctrl-p
+command = [
+  '''
+filepath={strip_ansi|split: :-1}
+if [ -d "$filepath" ]; then
+  tree -C -I .git -L 3 "$filepath"
+elif [ -f "$filepath" ]; then
+  bat -n --color=always "$filepath" 2>/dev/null || cat "$filepath"
+else
+  echo "Could not preview: $filepath"
+fi
+''',
+  '''
+filepath={strip_ansi|split: :-1}
 if [ -d "$filepath" ]; then
   tree -C -a -I .git -L 3 "$filepath"
 elif [ -f "$filepath" ]; then
@@ -28,6 +39,7 @@ else
   echo "Could not preview: $filepath"
 fi
 '''
+]
 
 [ui.preview_panel]
 size = 60
@@ -39,10 +51,10 @@ ctrl-o = "actions:open"
 
 [actions.edit]
 description = "Edit the selected file/directory with $EDITOR"
-command = '''filepath=$(echo '{}' | sed 's/\x1b\[[0-9;]*m//g' | sed 's/^[^.]*\(\.\)/\1/'); nvim "$filepath"'''
+command = '''filepath={strip_ansi|split: :-1}; nvim "$filepath"'''
 mode = "execute"
 
 [actions.open]
 description = "Open with default application (xdg-open)"
-command = '''filepath=$(echo '{}' | sed 's/\x1b\[[0-9;]*m//g' | sed 's/^[^.]*\(\.\)/\1/'); xdg-open "$filepath" 2>/dev/null || open "$filepath" 2>/dev/null || echo 'No open command available' '''
+command = '''filepath={strip_ansi|split: :-1}; xdg-open "$filepath" 2>/dev/null || open "$filepath" 2>/dev/null || echo 'No open command available' '''
 mode = "fork"
