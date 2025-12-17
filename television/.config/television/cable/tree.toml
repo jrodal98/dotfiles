@@ -19,13 +19,13 @@ output = "{strip_ansi|split: :-1}"
 # Extract the actual path from the tree line first
 command = '''
 # First strip all ANSI color codes, then extract the path
-path=$(echo '{}' | /usr/bin/sed 's/\x1b\[[0-9;]*m//g' | /usr/bin/sed 's/^[^.]*\(\.\)/\1/')
-if [ -d "$path" ]; then
-  /usr/bin/tree -C -a -I .git -L 3 "$path"
-elif [ -f "$path" ]; then
-  /usr/bin/bat -n --color=always "$path" 2>/dev/null || /usr/bin/cat "$path"
+filepath=$(echo '{}' | sed 's/\x1b\[[0-9;]*m//g' | sed 's/^[^.]*\(\.\)/\1/')
+if [ -d "$filepath" ]; then
+  tree -C -a -I .git -L 3 "$filepath"
+elif [ -f "$filepath" ]; then
+  bat -n --color=always "$filepath" 2>/dev/null || cat "$filepath"
 else
-  echo "Could not preview: $path"
+  echo "Could not preview: $filepath"
 fi
 '''
 
@@ -39,10 +39,10 @@ ctrl-o = "actions:open"
 
 [actions.edit]
 description = "Edit the selected file/directory with $EDITOR"
-command = '''filepath=$(echo '{}' | /usr/bin/sed 's/\x1b\[[0-9;]*m//g' | /usr/bin/sed 's/^[^.]*\(\.\)/\1/'); nvim "$filepath"'''
+command = '''filepath=$(echo '{}' | sed 's/\x1b\[[0-9;]*m//g' | sed 's/^[^.]*\(\.\)/\1/'); nvim "$filepath"'''
 mode = "execute"
 
 [actions.open]
 description = "Open with default application (xdg-open)"
-command = '''path=$(echo '{}' | sed 's/\x1b\[[0-9;]*m//g' | sed 's/^[^.]*\(\.\)/\1/'); xdg-open "$path" 2>/dev/null || open "$path" 2>/dev/null || echo 'No open command available' '''
+command = '''filepath=$(echo '{}' | sed 's/\x1b\[[0-9;]*m//g' | sed 's/^[^.]*\(\.\)/\1/'); xdg-open "$filepath" 2>/dev/null || open "$filepath" 2>/dev/null || echo 'No open command available' '''
 mode = "fork"
