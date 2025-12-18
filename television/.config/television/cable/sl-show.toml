@@ -8,3 +8,11 @@ command = "sl status --change . --no-status"
 
 [preview]
 command = "sl diff -c . --color=always -- '{}'"
+
+[keybindings]
+ctrl-e = "actions:edit"
+
+[actions.edit]
+description = "Edit selected file"
+command = "${EDITOR:-vim} '{}'"
+mode = "execute"

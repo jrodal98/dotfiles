@@ -10,3 +10,11 @@ ansi = true
 
 [preview]
 command = "sl show --color=always '{0|strip_ansi}' | head -n 1000"
+
+[keybindings]
+ctrl-g = "actions:checkout"
+
+[actions.checkout]
+description = "Checkout selected commit"
+command = "sl goto '{0|strip_ansi}'"
+mode = "execute"
