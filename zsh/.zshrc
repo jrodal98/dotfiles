@@ -57,12 +57,9 @@ fi
 
 bindkey -v
 bindkey '^y' autosuggest-accept
-bindkey '^j' ignore
 
-eval "$(starship init zsh)"
-
-if command -v mcfly &> /dev/null; then
-  eval "$(mcfly init zsh)"
+if command -v starship &> /dev/null; then
+  eval "$(starship init zsh)"
 fi
 
 if command -v direnv &> /dev/null; then
