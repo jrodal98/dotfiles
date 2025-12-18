@@ -1,0 +1,10 @@
+[metadata]
+name = "sl-show"
+description = "A channel to select files from the current commit"
+requirements = ["sl"]
+
+[source]
+command = "sl status --change . --no-status"
+
+[preview]
+command = "sl diff -c . --color=always -- '{}'"

@@ -1,0 +1,12 @@
+[metadata]
+name = "sl-reflog"
+description = "A channel to select from sl reflog entries"
+requirements = ["sl"]
+
+[source]
+command = "sl reflog --all --color=always"
+output = "{0|strip_ansi}"
+ansi = true
+
+[preview]
+command = "sl show --color=always '{0|strip_ansi}'"

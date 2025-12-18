@@ -1,0 +1,10 @@
+[metadata]
+name = "sl-diff"
+description = "A channel to select files from uncommitted changes"
+requirements = ["sl"]
+
+[source]
+command = "sl status --no-status"
+
+[preview]
+command = "sl diff --color=always -- '{}'"

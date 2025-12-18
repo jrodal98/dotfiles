@@ -1,0 +1,12 @@
+[metadata]
+name = "sl-log"
+description = "A channel to select from sl log entries"
+requirements = ["sl"]
+
+[source]
+command = "sl log --template '{label(\"yellow\", node|short)} -{label(\"yellow\", if(bookmarks, \" ({bookmarks})\", \"\"))} {label(\"reset\", desc|firstline)} {label(\"green\", \"({date|age})\")} {label(\"blue bold\", \"<{author|person}>\")}\\n' --limit 100 --color=always"
+output = "{0|strip_ansi}"
+ansi = true
+
+[preview]
+command = "sl show --color=always '{0|strip_ansi}' | head -n 1000"
