@@ -5,8 +5,9 @@ requirements = ["jf", "jq", "column", "sl"]
 
 [source]
 command = [
-  "jf --json list | jq -r '(.data.list[] | [.diff, .status, .title]) | @tsv' | column -ts $'\\t'",
-  "jf --json list --status CLOSED | jq -r '(.data.list[] | [.diff, .status, .title]) | @tsv' | column -ts $'\\t'"
+  "REPO=$(sl config phrevset.callsign 2>/dev/null); if [ -n \"$REPO\" ]; then jf --json list --repositories \"$REPO\"; else jf --json list; fi | jq -r '(.data.list[] | select(.title | test(\"\\\\[cross builds\\\\] enable CI\") | not) | [.diff, .status, .title]) | @tsv' | column -ts $'\\t'",
+  "REPO=$(sl config phrevset.callsign 2>/dev/null); if [ -n \"$REPO\" ]; then jf --json list --status CLOSED --limit 250 --repositories \"$REPO\"; else jf --json list --status CLOSED --limit 250; fi | jq -r '(.data.list[] | select(.title | test(\"\\\\[cross builds\\\\] enable CI\") | not) | [.diff, .status, .title]) | @tsv' | column -ts $'\\t'",
+  "REPO=$(sl config phrevset.callsign 2>/dev/null); if [ -n \"$REPO\" ]; then jf --json list --status ABANDONED --limit 250 --repositories \"$REPO\"; else jf --json list --status ABANDONED --limit 250; fi | jq -r '(.data.list[] | select(.title | test(\"\\\\[cross builds\\\\] enable CI\") | not) | [.diff, .status, .title]) | @tsv' | column -ts $'\\t'"
 ]
 output = "{split: :0}"
 
@@ -15,6 +16,14 @@ command = [
   "sl show --stat --color=always '{split: :0}'",
   "sl status --change '{split: :0}'"
 ]
+
+[keybindings]
+ctrl-e = "actions:edit"
+
+[actions.edit]
+description = "Open modified files in editor"
+command = "${EDITOR:-vim} $(sl status --change '{split: :0}' --no-status)"
+mode = "execute"
 
 [ui]
 preview_panel = { size = 60 }
