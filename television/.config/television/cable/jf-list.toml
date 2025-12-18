@@ -1,0 +1,20 @@
+[metadata]
+name = "jf-list"
+description = "Browse Jellyfish diffs"
+requirements = ["jf", "jq", "column", "sl"]
+
+[source]
+command = [
+  "jf --json list | jq -r '(.data.list[] | [.diff, .status, .title]) | @tsv' | column -ts $'\\t'",
+  "jf --json list --status CLOSED | jq -r '(.data.list[] | [.diff, .status, .title]) | @tsv' | column -ts $'\\t'"
+]
+output = "{split: :0}"
+
+[preview]
+command = [
+  "sl show --stat --color=always '{split: :0}'",
+  "sl status --change '{split: :0}'"
+]
+
+[ui]
+preview_panel = { size = 60 }
