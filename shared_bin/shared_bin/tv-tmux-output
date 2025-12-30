@@ -1,0 +1,22 @@
+#!/bin/bash
+# Wrapper to run tv tmux-output with custom input via environment variable
+# Usage: tv-tmux-output [<tmux output>]
+#   or: cat file | tv-tmux-output
+#   or: tv-tmux-output (captures from current tmux pane)
+
+if [ -n "$1" ]; then
+    # Argument provided
+    export TV_TMUX_SOURCE_INPUT="$1"
+elif [ ! -t 0 ]; then
+    # Reading from stdin
+    export TV_TMUX_SOURCE_INPUT="$(cat)"
+else
+    # No argument and no stdin - capture from tmux
+    if ! tmux_output=$(tmux capture-pane -pS - 2>/dev/null); then
+        echo "Error: Not in a tmux session and no input provided" >&2
+        exit 1
+    fi
+    export TV_TMUX_SOURCE_INPUT="$tmux_output"
+fi
+
+tv tmux-output

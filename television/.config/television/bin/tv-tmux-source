@@ -1,0 +1,74 @@
+#!/usr/bin/env python3
+"""Parse tmux scrollback to extract command outputs for TV channel."""
+
+import subprocess
+import re
+import sys
+import os
+
+# Get the whole tmux scrollback
+# Check if input is provided via environment variable
+if os.environ.get('TV_TMUX_SOURCE_INPUT'):
+    scrollback = os.environ['TV_TMUX_SOURCE_INPUT'].splitlines()
+else:
+    try:
+        panecap = subprocess.run(
+            ["tmux", "capture-pane", "-pS", "-"],
+            stdout=subprocess.PIPE,
+            check=True,
+            encoding='utf-8',
+            stderr=subprocess.DEVNULL
+        )
+        scrollback = panecap.stdout.splitlines()
+    except (subprocess.CalledProcessError, FileNotFoundError):
+        # If tmux fails, output a single dummy entry so TV doesn't error
+        print("0|||No tmux session found|||")
+        sys.exit(0)
+
+# Patterns to detect prompts
+# Support multiple prompt formats:
+# - └─> or └─< (starship/powerline style)
+# Match the exact prompt format with space after arrow
+PROMPT_CMDLINE = r'^└─[><]\s'
+PROMPT_START = r'^┌─'  # Start of prompt block
+
+cmds = []
+collect = []
+cmd_num = 0
+in_command = False
+
+for line in scrollback:
+    # Check if this is a command line
+    if re.match(PROMPT_CMDLINE, line):
+        # Extract the command
+        cmd_line = re.sub(r'^└─[><]\s*', '', line)
+        collect = []  # Don't include the command line itself
+        current_cmd = cmd_line  # Store command separately
+        in_command = True
+    # Check if this is the start of a new prompt (end of previous command)
+    elif re.match(PROMPT_START, line):
+        if in_command and len(collect) > 0:  # Only include commands with output
+            # Skip commands starting with 'tv tmux-output'
+            if not current_cmd.startswith('tv tmux-output'):
+                # Format: "INDEX|||COMMAND_LINE|||OUTPUT" (with newlines encoded)
+                output = '\\n'.join(collect)
+                print(f"{cmd_num}|||{current_cmd}|||{output}")
+                cmds.append(collect)
+                cmd_num += 1
+        collect = []
+        in_command = False
+    # Collect output lines
+    elif in_command:
+        collect.append(line)
+
+# Handle last command if at end of scrollback
+if in_command and len(collect) > 0:
+    if current_cmd and not current_cmd.startswith('tv tmux-output'):  # Only include if there's a command and it's not tv tmux-output
+        output = '\\n'.join(collect)
+        print(f"{cmd_num}|||{current_cmd}|||{output}")
+        cmds.append(collect)
+        cmd_num += 1
+
+# If no commands were found, output a placeholder so TV doesn't error
+if cmd_num == 0:
+    print("0|||No commands with output found in scrollback|||")

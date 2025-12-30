@@ -1,0 +1,38 @@
+[metadata]
+name = "tmux-output"
+description = "Browse and paste tmux command outputs"
+requirements = ["tmux"]
+
+[source]
+command = "~/.config/television/bin/tv-tmux-source"
+output = "{split:|||:2|replace:s/\\\\n/\n/g}"
+display = "{split:|||:1}"
+
+[preview]
+command = "echo '{split:|||:2|replace:s/\\\\n/\n/g}'"
+
+[ui]
+preview_panel = { size = 60, header = "Output: {split:|||:1}" }
+
+[keybindings]
+ctrl-v = "actions:paste"
+ctrl-e = "actions:edit"
+ctrl-y = "actions:copy"
+
+[actions.paste]
+description = "Paste selected command output(s)"
+command = "~/.config/television/bin/tv-tmux-paste {}"
+mode = "execute"
+separator = "\n"
+
+[actions.copy]
+description = "Copy selected command output(s) to clipboard"
+command = "~/.config/television/bin/tv-tmux-copy {}"
+mode = "execute"
+separator = "\n"
+
+[actions.edit]
+description = "Edit command output in neovim"
+command = "~/.config/television/bin/tv-tmux-edit {}"
+mode = "execute"
+separator = "\n"

@@ -1,0 +1,3 @@
+#!/bin/bash
+# Join all arguments with newlines and pass to formatter
+printf '%s\n' "$@" | ~/.config/television/bin/tv-tmux-format | pastry

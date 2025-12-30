@@ -1,0 +1,9 @@
+#!/bin/bash
+# Join all arguments with newlines and pass to formatter, then copy via OSC52
+output=$(printf '%s\n' "$@" | ~/.config/television/bin/tv-tmux-format)
+
+# Encode to base64 for OSC52
+encoded=$(printf '%s' "$output" | base64 | tr -d '\n')
+
+# Send OSC52 sequence
+printf '\033]52;c;%s\a' "$encoded"
