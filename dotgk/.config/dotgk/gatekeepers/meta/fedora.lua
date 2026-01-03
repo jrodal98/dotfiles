@@ -1,4 +1,4 @@
 return all({
 	require("os.linux"),
-	require("meta.laptop"),
+	file_exists("/var/chef/outputs/cpe_info.json"),
 })
