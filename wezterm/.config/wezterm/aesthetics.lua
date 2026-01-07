@@ -19,7 +19,11 @@ else
    aesthetics.font_size = 16
 end
 
+if wezterm.hostname() == "jrodal-mbp" then
+   aesthetics.window_decorations = "RESIZE"
+else
+   aesthetics.window_decorations = "INTEGRATED_BUTTONS|RESIZE"
+end
 -- Configures whether the window has a title bar and/or resizable border.
-aesthetics.window_decorations = "INTEGRATED_BUTTONS|RESIZE"
 
 return aesthetics
