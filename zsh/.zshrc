@@ -72,5 +72,7 @@ if command -v tv &> /dev/null; then
   eval "$(tv init zsh)"
 fi
 
+source ~/.jrodal_zsh_utils/wezterm/init.sh
+
 touch "${HOME}/.env" && source "${HOME}/.env"
 # zprof # uncomment top and bottom of file to profile startup
