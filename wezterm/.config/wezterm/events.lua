@@ -35,10 +35,15 @@ end)
 wezterm.on('user-var-changed', function(window, pane, name, value)
   wezterm.log_info('var', name, value)
   if name == 'event:notify' then
-    window:toast_notification('wezterm', value, nil, 1000)
-  end
-
-  if name == 'event:copy' then
+      local ok, fields = pcall(wezterm.json_parse, value)
+      fields = ok and type(fields) == "table" and fields or {}
+      window:toast_notification(
+        fields.title or 'wezterm',
+        fields.message or value,
+        fields.url or nil,
+        fields.timeout or nil
+      )
+   elseif name == 'event:copy' then
     window:copy_to_clipboard(value, 'Clipboard')
   end
 end)
