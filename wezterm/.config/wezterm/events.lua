@@ -30,3 +30,15 @@ wezterm.on("augment-command-palette", function(window, pane)
       },
    }
 end)
+
+-- https://wezterm.org/config/lua/pane/get_user_vars.html
+wezterm.on('user-var-changed', function(window, pane, name, value)
+  wezterm.log_info('var', name, value)
+  if name == 'event:notify' then
+    window:toast_notification('wezterm', value, nil, 1000)
+  end
+
+  if name == 'event:copy' then
+    window:copy_to_clipboard(value, 'Clipboard')
+  end
+end)
