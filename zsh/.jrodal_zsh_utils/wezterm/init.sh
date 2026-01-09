@@ -3,6 +3,7 @@
 SCRIPT_DIR="${0:A:h}"
 # this file comes from https://raw.githubusercontent.com/wezterm/wezterm/refs/heads/main/assets/shell-integration/wezterm.sh
 source "$SCRIPT_DIR/wezterm.sh"
+source "$SCRIPT_DIR/wezterm_overrides"
 
 # Example: weznotify --title "Example notification" --message "Click on this notification to see documentation details" --url https://wezterm.org/config/lua/window/toast_notification.html --timeout 5000
 # See https://github.com/wezterm/wezterm/issues/5476 if this is not working on mac
