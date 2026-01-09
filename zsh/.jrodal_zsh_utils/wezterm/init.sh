@@ -5,7 +5,7 @@ SCRIPT_DIR="${0:A:h}"
 source "$SCRIPT_DIR/wezterm.sh"
 
 function weznotify() {
-  __wezterm_set_user_var 'event:notifiy' "$1"
+  __wezterm_set_user_var 'event:notify' "$1"
 }
 
 # Copy to clipboard: `wezcopy "text"` or `echo "text" | wezcopy`
