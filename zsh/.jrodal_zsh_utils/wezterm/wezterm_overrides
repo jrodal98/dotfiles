@@ -25,17 +25,18 @@ __find_parent_tty() {
   return 1
 }
 
-# Override to handle Claude Code hooks and neovim terminals.
+# Compute output target once at shell init - avoids issues with pipes/subshells
+if [[ -n "${NVIM-}" ]]; then
+  __wezterm_output_target=$(__find_parent_tty)
+  [[ -z "$__wezterm_output_target" ]] && __wezterm_output_target="/dev/tty"
+else
+  __wezterm_output_target="/dev/tty"
+fi
+
+# Override to handle neovim terminals.
 # Uses -w 0 for base64 to handle long input.
 __wezterm_set_user_var() {
   hash base64 2>/dev/null || return
-
-  # Find output target for environments that capture stdout
-  local output_target=""
-  if [[ -n "${CLAUDE_HOOK-}" || -n "${NVIM-}" ]]; then
-    output_target=$(__find_parent_tty)
-    [[ -z "$output_target" ]] && return
-  fi
 
   # Build the escape sequence
   local payload=$(echo -n "$2" | base64 -w 0)
@@ -47,10 +48,5 @@ __wezterm_set_user_var() {
     seq=$(printf "\033]1337;SetUserVar=%s=%s\007" "$1" "$payload")
   fi
 
-  # Output to target or stdout
-  if [[ -n "$output_target" ]]; then
-    echo -n "$seq" > "$output_target"
-  else
-    echo -n "$seq"
-  fi
+  echo -n "$seq" > "$__wezterm_output_target"
 }
