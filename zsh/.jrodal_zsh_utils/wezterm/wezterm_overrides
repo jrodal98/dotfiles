@@ -23,13 +23,17 @@ __wezterm_set_user_var() {
     if [[ -n "${NVIM-}" && -n "${TMUX-}" ]] ; then
       output_target=$(readlink /proc/$PPID/fd/0 2>/dev/null)
       [[ -z "$output_target" ]] && return
-    # If inside Claude Code within tmux, walk up process tree to find TTY
-    elif [[ -n "${CLAUDECODE-}" && -n "${TMUX-}" ]] ; then
+    # If inside Claude Code, walk up process tree to find TTY
+    elif [[ -n "${CLAUDECODE-}" ]] ; then
       output_target=$(__find_parent_tty)
       [[ -z "$output_target" ]] && return
     fi
     if [[ -z "${TMUX-}" ]] ; then
-      printf "\033]1337;SetUserVar=%s=%s\007" "$1" `echo -n "$2" | base64 -w 0`
+      if [[ -n "$output_target" ]] ; then
+        printf "\033]1337;SetUserVar=%s=%s\007" "$1" `echo -n "$2" | base64 -w 0` > "$output_target"
+      else
+        printf "\033]1337;SetUserVar=%s=%s\007" "$1" `echo -n "$2" | base64 -w 0`
+      fi
     else
       # <https://github.com/tmux/tmux/wiki/FAQ#what-is-the-passthrough-escape-sequence-and-how-do-i-use-it>
       # Note that you ALSO need to add "set -g allow-passthrough on" to your tmux.conf
