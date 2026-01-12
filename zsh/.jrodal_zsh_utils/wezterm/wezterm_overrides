@@ -50,3 +50,16 @@ __wezterm_set_user_var() {
 
   echo -n "$seq" > "$__wezterm_output_target"
 }
+
+# Override OSC 7 - skip wezterm CLI in neovim since it outputs to stdout
+__wezterm_osc7() {
+  # In neovim, skip wezterm CLI and use our TTY-based solution
+  if [[ -z "${NVIM-}" ]] && hash wezterm 2>/dev/null ; then
+    wezterm set-working-directory 2>/dev/null && return 0
+  fi
+  if [[ -n "${TMUX-}" ]]; then
+    printf "\033Ptmux;\033\033]7;file://%s%s\033\033\\\\\033\\" "${HOSTNAME}" "${PWD}" > "$__wezterm_output_target"
+  else
+    printf "\033]7;file://%s%s\033\\" "${HOSTNAME}" "${PWD}" > "$__wezterm_output_target"
+  fi
+}
