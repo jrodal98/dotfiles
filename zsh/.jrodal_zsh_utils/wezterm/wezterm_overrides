@@ -19,8 +19,8 @@ __find_parent_tty() {
 __wezterm_set_user_var() {
   if hash base64 2>/dev/null ; then
     local output_target=""
-    # If inside neovim's terminal within tmux, use parent's TTY
-    if [[ -n "${NVIM-}" && -n "${TMUX-}" ]] ; then
+    # If inside neovim's terminal, use parent's TTY
+    if [[ -n "${NVIM-}" ]] ; then
       output_target=$(readlink /proc/$PPID/fd/0 2>/dev/null)
       [[ -z "$output_target" ]] && return
     # If inside Claude Code, walk up process tree to find TTY
