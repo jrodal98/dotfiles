@@ -1,47 +1,56 @@
 # Intentionally not setting a shebang so that shellharden doesn't mess with this file
 
-# Helper to find TTY by walking up the process tree (for Claude Code)
+# Find TTY by walking up the process tree.
+# When inside neovim, skips the first pts (neovim's internal terminal) to find the outer one.
 __find_parent_tty() {
-  local pid=$$
-  local tty=""
+  local pid=$$ tty="" first_tty=""
   while [[ $pid -gt 1 ]]; do
     tty=$(readlink /proc/$pid/fd/0 2>/dev/null)
     if [[ "$tty" == /dev/pts/* ]]; then
-      echo "$tty"
-      return 0
+      if [[ -n "${NVIM-}" ]]; then
+        # Skip neovim's internal terminal, find the outer one
+        if [[ -z "$first_tty" ]]; then
+          first_tty="$tty"
+        elif [[ "$tty" != "$first_tty" ]]; then
+          echo "$tty"
+          return 0
+        fi
+      else
+        echo "$tty"
+        return 0
+      fi
     fi
     pid=$(awk '{print $4}' /proc/$pid/stat 2>/dev/null)
   done
   return 1
 }
 
-# I added the -w 0 arg to make this work with long input
+# Override to handle Claude Code hooks and neovim terminals.
+# Uses -w 0 for base64 to handle long input.
 __wezterm_set_user_var() {
-  if hash base64 2>/dev/null ; then
-    local output_target=""
-    # If inside neovim's terminal, use parent's TTY
-    if [[ -n "${NVIM-}" ]] ; then
-      output_target=$(readlink /proc/$PPID/fd/0 2>/dev/null)
-      [[ -z "$output_target" ]] && return
-    # If inside Claude Code, walk up process tree to find TTY
-    elif [[ -n "${CLAUDECODE-}" ]] ; then
-      output_target=$(__find_parent_tty)
-      [[ -z "$output_target" ]] && return
-    fi
-    if [[ -z "${TMUX-}" ]] ; then
-      if [[ -n "$output_target" ]] ; then
-        printf "\033]1337;SetUserVar=%s=%s\007" "$1" `echo -n "$2" | base64 -w 0` > "$output_target"
-      else
-        printf "\033]1337;SetUserVar=%s=%s\007" "$1" `echo -n "$2" | base64 -w 0`
-      fi
-    else
-      # <https://github.com/tmux/tmux/wiki/FAQ#what-is-the-passthrough-escape-sequence-and-how-do-i-use-it>
-      # Note that you ALSO need to add "set -g allow-passthrough on" to your tmux.conf
-      if [[ -n "$output_target" ]] ; then
-        printf "\033Ptmux;\033\033]1337;SetUserVar=%s=%s\007\033\\" "$1" `echo -n "$2" | base64 -w 0` > "$output_target"
-      else
-        printf "\033Ptmux;\033\033]1337;SetUserVar=%s=%s\007\033\\" "$1" `echo -n "$2" | base64 -w 0`
-      fi
-    fi
+  hash base64 2>/dev/null || return
+
+  # Find output target for environments that capture stdout
+  local output_target=""
+  if [[ -n "${CLAUDE_HOOK-}" || -n "${NVIM-}" ]]; then
+    output_target=$(__find_parent_tty)
+    [[ -z "$output_target" ]] && return
+  fi
+
+  # Build the escape sequence
+  local payload=$(echo -n "$2" | base64 -w 0)
+  local seq
+  if [[ -n "${TMUX-}" ]]; then
+    # tmux passthrough: https://github.com/tmux/tmux/wiki/FAQ
+    seq=$(printf "\033Ptmux;\033\033]1337;SetUserVar=%s=%s\007\033\\" "$1" "$payload")
+  else
+    seq=$(printf "\033]1337;SetUserVar=%s=%s\007" "$1" "$payload")
+  fi
+
+  # Output to target or stdout
+  if [[ -n "$output_target" ]]; then
+    echo -n "$seq" > "$output_target"
+  else
+    echo -n "$seq"
   fi
 }
