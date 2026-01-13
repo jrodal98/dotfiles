@@ -72,12 +72,12 @@ bindings.key_tables = {
       {
         key = 'n',
         mods = 'CTRL',
-        action = wezterm.action.CopyMode { MoveForwardZoneOfType = 'Output' },
+          action = wezterm.action.CopyMode 'MoveForwardSemanticZone',
       },
       {
         key = 'p',
         mods = 'CTRL',
-        action = wezterm.action.CopyMode { MoveBackwardZoneOfType = 'Output' },
+          action = wezterm.action.CopyMode 'MoveBackwardSemanticZone',
       },
 
       -- Cherry picked from defaults
