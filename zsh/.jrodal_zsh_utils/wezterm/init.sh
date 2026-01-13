@@ -31,3 +31,50 @@ function wezcopy() {
   local text="${1:-$(cat)}"
   __wezterm_set_user_var 'event:copy' "$text"
 }
+
+# --- Desktop Notification for Long-Running Commands ---
+typeset -g __cmd_start_time
+typeset -g __cmd_command
+
+__notify_preexec() {
+  __cmd_start_time=$EPOCHSECONDS
+  __cmd_command="${1:-$3}"
+}
+
+__notify_precmd() {
+  local exit_code=$?
+
+  [[ -z "$__cmd_start_time" ]] && return
+
+  local duration=$(( EPOCHSECONDS - __cmd_start_time ))
+
+  if (( duration >= 30 )); then
+    local cmd_display="$__cmd_command"
+    if (( ${#cmd_display} > 40 )); then
+      cmd_display="${cmd_display:0:37}..."
+    fi
+
+    # Build location info: hostname + tmux window/pane if available
+    local location="${HOST:-${HOSTNAME:-unknown}}"
+    if [[ -n "${TMUX-}" ]]; then
+      local tmux_info=$(tmux display-message -p '#W:#P' 2>/dev/null)
+      [[ -n "$tmux_info" ]] && location="$location ($tmux_info)"
+    fi
+
+    local message="[$location] $cmd_display (${duration}s)"
+
+    if (( exit_code == 0 )); then
+      weznotify --title "Command succeeded" --message "$message" --timeout 10000
+    else
+      weznotify --title "Command failed" --message "$message" --timeout 10000
+    fi
+  fi
+
+  __cmd_start_time=
+  __cmd_command=
+}
+
+autoload -Uz add-zsh-hook
+add-zsh-hook preexec __notify_preexec
+add-zsh-hook precmd __notify_precmd
+# --- End Notification Setup ---
