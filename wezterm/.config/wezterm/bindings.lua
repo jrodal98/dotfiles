@@ -68,8 +68,17 @@ bindings.key_tables = {
       -- navigate any search mode results
       { key = "n", mods = "NONE", action = wezterm.action { CopyMode = "NextMatch" } },
       { key = "N", mods = "SHIFT", action = wezterm.action { CopyMode = "PriorMatch" } },
-      { key = "p", mods = "CTRL", action = wezterm.action { CopyMode = "PriorMatch" } },
-      { key = "n", mods = "CTRL", action = wezterm.action { CopyMode = "NextMatch" } },
+
+      {
+        key = 'n',
+        mods = 'CTRL',
+        action = wezterm.action.CopyMode { MoveForwardZoneOfType = 'Output' },
+      },
+      {
+        key = 'p',
+        mods = 'CTRL',
+        action = wezterm.action.CopyMode { MoveBackwardZoneOfType = 'Output' },
+      },
 
       -- Cherry picked from defaults
 
