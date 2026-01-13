@@ -63,3 +63,49 @@ __wezterm_osc7() {
     printf "\033]7;file://%s%s\033\\" "${HOSTNAME}" "${PWD}" > "$__wezterm_output_target"
   fi
 }
+
+# Helper to emit escape sequences with tmux passthrough
+__wezterm_emit() {
+  if [[ -n "${TMUX-}" ]]; then
+    printf "\033Ptmux;\033%s\033\\" "$1" > "$__wezterm_output_target"
+  else
+    printf "%s" "$1" > "$__wezterm_output_target"
+  fi
+}
+
+# Override semantic precmd for tmux passthrough
+__wezterm_semantic_precmd() {
+  local ret="$?"
+  if [[ "$__wezterm_semantic_precmd_executing" != "0" ]] ; then
+    __wezterm_save_ps1="$PS1"
+    __wezterm_save_ps2="$PS2"
+    if [[ -n "$ZSH_NAME" ]] ; then
+      PS1=$'%{\e]133;P;k=i\a%}'$PS1$'%{\e]133;B\a%}'
+      PS2=$'%{\e]133;P;k=s\a%}'$PS2$'%{\e]133;B\a%}'
+    else
+      PS1='\[\e]133;P;k=i\a\]'$PS1'\[\e]133;B\a\]'
+      PS2='\[\e]133;P;k=s\a\]'$PS2'\[\e]133;B\a\]'
+    fi
+    __wezterm_check_ps1="$PS1"
+  fi
+  if [[ "$__wezterm_semantic_precmd_executing" != "" ]] ; then
+    __wezterm_emit "$(printf "\033]133;D;%s;aid=%s\007" "$ret" "$$")"
+  fi
+  if [[ -n "${BLE_VERSION-}" ]]; then
+    __wezterm_emit $'\033]133;P\007'
+  else
+    __wezterm_emit "$(printf "\033]133;A;cl=m;aid=%s\007" "$$")"
+  fi
+  __wezterm_semantic_precmd_executing=0
+}
+
+# Override semantic preexec for tmux passthrough
+__wezterm_semantic_preexec() {
+  if [[ -n "${__wezterm_save_ps1+1}" && "${__wezterm_check_ps1-}" == "${PS1}" ]]; then
+    PS1="$__wezterm_save_ps1"
+    PS2="$__wezterm_save_ps2"
+    unset __wezterm_save_ps1
+  fi
+  __wezterm_emit $'\033]133;C;\007'
+  __wezterm_semantic_precmd_executing=1
+}
