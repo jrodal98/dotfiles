@@ -49,6 +49,16 @@ __notify_precmd() {
   local duration=$(( EPOCHSECONDS - __cmd_start_time ))
 
   if (( duration >= 30 )); then
+    # Skip interactive commands that are expected to run long
+    local cmd_first="${__cmd_command%% *}"
+    case "$cmd_first" in
+      nvim|vim|vi|claude|ssh|tmux)
+        __cmd_start_time=
+        __cmd_command=
+        return
+        ;;
+    esac
+
     local cmd_display="$__cmd_command"
     if (( ${#cmd_display} > 40 )); then
       cmd_display="${cmd_display:0:37}..."
