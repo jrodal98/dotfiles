@@ -52,7 +52,7 @@ __notify_precmd() {
     # Skip interactive commands that are expected to run long
     local cmd_first="${__cmd_command%% *}"
     case "$cmd_first" in
-      nvim|vim|vi|claude|ssh|tmux|slo|yazi|sudoedit|dmt|sls|sld)
+      nvim|vim|vi|claude|ssh|tmux|slo|yazi|sudoedit|dmt|sls|sld|happy)
         __cmd_start_time=
         __cmd_command=
         return
