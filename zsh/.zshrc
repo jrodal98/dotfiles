@@ -30,30 +30,44 @@ export TERMINAL='wezterm'
 export PYTHONWARNINGS="ignore"
 
 
-# load zgen
-# My mac was using the below line, not sure why. If I see something weird, I'll renable it I guess.
-# ZSH_DISABLE_COMPFIX="true"
-source "${HOME}/.zgen/zgen.zsh"
+# load zinit
+ZINIT_HOME="${XDG_DATA_HOME:-${HOME}/.local/share}/zinit/zinit.git"
+[ ! -d $ZINIT_HOME ] && mkdir -p "$(dirname $ZINIT_HOME)"
+[ ! -d $ZINIT_HOME/.git ] && git clone --depth 1 https://github.com/zdharma-continuum/zinit.git "$ZINIT_HOME"
+source "${ZINIT_HOME}/zinit.zsh"
 
-# if the init script doesn't exist
-# If adding a new plugin, I may need to run zgen reset
-if ! zgen saved; then
-  zgen oh-my-zsh
+# OMZ libraries needed for plugins (load immediately, required for prompt)
+zinit snippet OMZL::git.zsh
+zinit snippet OMZL::key-bindings.zsh
 
-  # plugins
+# OMZ plugins with turbo mode (deferred loading for faster startup)
+zinit ice wait lucid
+zinit snippet OMZP::extract
 
-  zgen oh-my-zsh plugins/extract
-  zgen oh-my-zsh plugins/vi-mode
-  zgen oh-my-zsh plugins/colored-man-pages
-  zgen oh-my-zsh plugins/autojump # note: install autojump first
+zinit ice wait lucid
+zinit snippet OMZP::vi-mode
 
-  zgen load zsh-users/zsh-autosuggestions
-  zgen load zsh-users/zsh-syntax-highlighting
-  zgen load zsh-users/zsh-completions src
+zinit ice wait lucid
+zinit snippet OMZP::colored-man-pages
 
-  # generate the init script from plugins above
-  zgen save
-fi
+zinit ice wait lucid
+zinit snippet OMZP::autojump  # note: install autojump first
+
+# External plugins with turbo mode
+zinit ice wait lucid depth"1" atload"_zsh_autosuggest_start"
+zinit light zsh-users/zsh-autosuggestions
+
+# Completions - blockf prevents default completion install, zinit handles it
+zinit ice wait lucid depth"1" blockf atpull"zinit creinstall -q ."
+zinit light zsh-users/zsh-completions
+
+# Syntax highlighting - must load last, use wait"1" to ensure it loads after other plugins
+zinit ice wait"1" lucid depth"1"
+zinit light zsh-users/zsh-syntax-highlighting
+
+# Initialize completions with ez-compinit (deferred + cached)
+zstyle ':plugin:ez-compinit' 'use-cache' 'yes'
+zinit light mattmc3/ez-compinit
 
 bindkey -v
 bindkey '^y' autosuggest-accept
