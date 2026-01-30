@@ -37,6 +37,7 @@ ZINIT_HOME="${XDG_DATA_HOME:-${HOME}/.local/share}/zinit/zinit.git"
 source "${ZINIT_HOME}/zinit.zsh"
 
 # OMZ libraries needed for plugins (load immediately, required for prompt)
+zinit snippet OMZL::history.zsh
 zinit snippet OMZL::git.zsh
 zinit snippet OMZL::key-bindings.zsh
 
@@ -50,8 +51,6 @@ zinit snippet OMZP::vi-mode
 zinit ice wait lucid
 zinit snippet OMZP::colored-man-pages
 
-zinit ice wait lucid
-zinit snippet OMZP::autojump  # note: install autojump first
 
 # External plugins with turbo mode
 zinit ice wait lucid depth"1" atload"_zsh_autosuggest_start"
@@ -78,6 +77,10 @@ fi
 
 if command -v direnv &> /dev/null; then
   eval "$(direnv hook zsh)"
+fi
+
+if command -v zoxide &> /dev/null; then
+  eval "$(zoxide init zsh --cmd j)"
 fi
 
 [ -f ~/.fzf.zsh ] && source ~/.fzf.zsh
