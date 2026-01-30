@@ -1,0 +1,57 @@
+[metadata]
+name = "claude-templates"
+description = "Search and browse available Claude templates"
+requirements = ["claude-templates"]
+
+[source]
+command = [
+  "claude-templates list --available | tail -n +2",
+  "claude-templates list | tail -n +2 | sort -u"
+]
+display = "{replace:s/\\s+/ /g|split: :1}"
+output = "{}"
+
+[preview]
+command = """
+TYPE=$(echo '{}' | awk '{print $1}')
+NAME=$(echo '{}' | awk '{print $2}')
+echo "Type: $TYPE"
+echo "Name: $NAME"
+echo ""
+echo "Commands:"
+echo "  Install:   claude-templates $TYPE $NAME install"
+echo "  Uninstall: claude-templates $TYPE $NAME uninstall"
+"""
+
+[keybindings]
+Enter = "actions:show"
+
+[actions.install]
+description = "Install selected template"
+command = """
+TYPE=$(echo '{}' | awk '{print $1}')
+NAME=$(echo '{}' | awk '{print $2}')
+claude-templates $TYPE $NAME install
+"""
+mode = "execute"
+
+[actions.show]
+description = "Show template details"
+command = """
+TYPE=$(echo '{}' | awk '{print $1}')
+NAME=$(echo '{}' | awk '{print $2}')
+claude-templates $TYPE $NAME info
+"""
+mode = "execute"
+
+[actions.uninstall]
+description = "Uninstall selected template"
+command = """
+TYPE=$(echo '{}' | awk '{print $1}')
+NAME=$(echo '{}' | awk '{print $2}')
+claude-templates $TYPE $NAME uninstall
+"""
+mode = "execute"
+
+[ui]
+preview_panel = { size = 50, header = "Template Info" }

@@ -10,7 +10,7 @@ fi
 
 source ~/.config/dotgk/caches/dotgk.sh
 
-[ -f ~/.metarc.zsh ] && source ~/.metarc.zsh
+[ -f ~/meta.zshrc ] && source ~/meta.zshrc
 
 if dotgk_check "server"; then
   [[ $TMUX || ! -t 0 || $TERM_PROGRAM = vscode ]] || tmux $TMUX_OPTIONS new-session -As auto

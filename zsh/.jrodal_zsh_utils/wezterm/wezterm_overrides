@@ -26,7 +26,7 @@ __find_parent_tty() {
 }
 
 # Compute output target once at shell init - avoids issues with pipes/subshells
-if [[ -n "${NVIM-}" ]]; then
+if [[ -n "${HAPPY_WRAPPER-}" ]] || [[ -n "${NVIM-}" ]]; then
   __wezterm_output_target=$(__find_parent_tty)
   [[ -z "$__wezterm_output_target" ]] && __wezterm_output_target="/dev/tty"
 else
