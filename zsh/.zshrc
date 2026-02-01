@@ -91,5 +91,7 @@ fi
 
 source ~/.jrodal_zsh_utils/wezterm/init.sh
 
+alias ls='ls --color=auto'
+
 touch "${HOME}/.env" && source "${HOME}/.env"
 # zprof # uncomment top and bottom of file to profile startup
