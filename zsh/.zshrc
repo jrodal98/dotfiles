@@ -36,6 +36,10 @@ ZINIT_HOME="${XDG_DATA_HOME:-${HOME}/.local/share}/zinit/zinit.git"
 [ ! -d $ZINIT_HOME/.git ] && git clone --depth 1 https://github.com/zdharma-continuum/zinit.git "$ZINIT_HOME"
 source "${ZINIT_HOME}/zinit.zsh"
 
+# Initialize completions with ez-compinit (deferred + cached)
+zstyle ':plugin:ez-compinit' 'use-cache' 'yes'
+zinit light mattmc3/ez-compinit
+
 # OMZ libraries needed for plugins (load immediately, required for prompt)
 zinit snippet OMZL::history.zsh
 zinit snippet OMZL::git.zsh
@@ -64,10 +68,6 @@ zinit light zsh-users/zsh-completions
 zinit ice wait"1" lucid depth"1"
 zinit light zsh-users/zsh-syntax-highlighting
 
-# Initialize completions with ez-compinit (deferred + cached)
-zstyle ':plugin:ez-compinit' 'use-cache' 'yes'
-zinit light mattmc3/ez-compinit
-
 bindkey -v
 bindkey '^y' autosuggest-accept
 
@@ -86,7 +86,7 @@ fi
 [ -f ~/.fzf.zsh ] && source ~/.fzf.zsh
 
 if command -v tv &> /dev/null; then
-  eval "$(tv init zsh)"
+  eval "$(tv init zsh)" 2>/dev/null
 fi
 
 source ~/.jrodal_zsh_utils/wezterm/init.sh
