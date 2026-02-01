@@ -38,6 +38,7 @@ source "${ZINIT_HOME}/zinit.zsh"
 
 # Initialize completions with ez-compinit (deferred + cached)
 zstyle ':plugin:ez-compinit' 'use-cache' 'yes'
+zstyle ':plugin:ez-compinit' 'compstyle' 'gremlin'
 zinit light mattmc3/ez-compinit
 
 # OMZ libraries needed for plugins (load immediately, required for prompt)
