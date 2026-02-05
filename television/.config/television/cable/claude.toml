@@ -1,0 +1,69 @@
+[metadata]
+name = "claude"
+description = "Browse Claude skills, commands, and agents"
+requirements = ["find", "bat", "grep", "sed"]
+
+[source]
+command = '''
+{
+  # Skills - from SKILL.md files (follow symlinks)
+  find -L ~/.claude/skills -name "SKILL.md" 2>/dev/null | while IFS= read -r file; do
+    # Check if file has frontmatter
+    if head -n1 "$file" | grep -q '^---$'; then
+      name=$(sed -n '/^name:/s/^name: *//p' "$file" | head -n1)
+    else
+      name=""
+    fi
+
+    # If no name field, use parent directory name
+    if [ -z "$name" ]; then
+      name=$(basename "$(dirname "$file")")
+    fi
+
+    printf "\033[32m[skill]\033[0m     %s|||%s\n" "$name" "$file"
+  done
+
+  # Commands - simple .md files
+  find ~/.claude/commands -type f -name "*.md" 2>/dev/null | while IFS= read -r file; do
+    basename=$(basename "$file" .md)
+    printf "\033[34m[command]\033[0m   %s|||%s\n" "$basename" "$file"
+  done
+
+  # Agents - .md files with frontmatter
+  find ~/.claude/agents -type f -name "*.md" 2>/dev/null | while IFS= read -r file; do
+    if head -n1 "$file" | grep -q '^---$'; then
+      name=$(sed -n '/^name:/s/^name: *//p' "$file" | head -n1)
+    else
+      name=""
+    fi
+
+    # If no name field, use filename
+    if [ -z "$name" ]; then
+      name=$(basename "$file" .md)
+    fi
+
+    printf "\033[33m[agent]\033[0m    %s|||%s\n" "$name" "$file"
+  done
+} | sort -k2
+'''
+ansi = true
+display = "{strip_ansi|split:|||:0}"
+output = "{strip_ansi|split:|||:1}"
+
+[preview]
+command = "bat -n --color=always --language=markdown '{strip_ansi|split:|||:1}'"
+env = { BAT_THEME = "ansi" }
+
+[ui]
+preview_panel = {
+  size = 60,
+  header = "{strip_ansi|split:|||:1|split:/:-1}"
+}
+
+[keybindings]
+ctrl-e = "actions:edit"
+
+[actions.edit]
+description = "Edit in editor"
+command = "${EDITOR:-vim} '{strip_ansi|split:|||:1}'"
+mode = "execute"
