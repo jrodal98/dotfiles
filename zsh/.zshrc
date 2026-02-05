@@ -13,7 +13,10 @@ source ~/.config/dotgk/caches/dotgk.sh
 [ -f ~/meta.zshrc ] && source ~/meta.zshrc
 
 if dotgk_check "server"; then
-  [[ $TMUX || ! -t 0 || $TERM_PROGRAM = vscode ]] || tmux $TMUX_OPTIONS new-session -As auto
+  # 1. Don't call tmux if already in a tmux session
+  # 2. Don't call tmux if the term program is vscode
+  # 3. Don't call tmux if in a non-interactive ssh session (e.g. ek connect, ssh host "ls")
+  [[ $TMUX || ! -t 0 || $TERM_PROGRAM = vscode || -z $SSH_TTY ]] || tmux $TMUX_OPTIONS new-session -As auto
 fi
 
 
