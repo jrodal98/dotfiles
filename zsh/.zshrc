@@ -53,8 +53,8 @@ zinit snippet OMZL::key-bindings.zsh
 zinit ice wait lucid
 zinit snippet OMZP::extract
 
-zinit ice wait lucid
-zinit snippet OMZP::vi-mode
+zinit ice depth=1
+zinit light jeffreytse/zsh-vi-mode
 
 zinit ice wait lucid
 zinit snippet OMZP::colored-man-pages
