@@ -57,6 +57,10 @@ zinit snippet OMZP::extract
 
 zinit ice depth=1
 zinit light jeffreytse/zsh-vi-mode
+# override the '^y' set by zsh-vi-mode
+function zvm_after_init() {
+  zvm_bindkey viins '^y' autosuggest-accept
+}
 
 zinit ice wait lucid
 zinit snippet OMZP::colored-man-pages
@@ -72,9 +76,6 @@ zinit light zsh-users/zsh-completions
 # Syntax highlighting - must load last, use wait"1" to ensure it loads after other plugins
 zinit ice wait"1" lucid depth"1"
 zinit light zsh-users/zsh-syntax-highlighting
-
-bindkey -v
-bindkey '^y' autosuggest-accept
 
 if command -v starship &> /dev/null; then
   eval "$(starship init zsh)"
