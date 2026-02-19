@@ -32,8 +32,10 @@ export GIT_EDITOR='nvim'
 export TERMINAL='wezterm'
 export PYTHONWARNINGS="ignore"
 
-# Make it so that ctrl-w on a/b/c/d removes d instead of the entire path
-export WORDCHARS=${WORDCHARS/\/}
+# Make it so that ctrl-w on...
+#   a/b/c/d removes d instead of the entire path
+#   a=b=c=d removes d instead of the entire path
+export WORDCHARS=${WORDCHARS//[\/=]}
 
 # load zinit
 ZINIT_HOME="${XDG_DATA_HOME:-${HOME}/.local/share}/zinit/zinit.git"
