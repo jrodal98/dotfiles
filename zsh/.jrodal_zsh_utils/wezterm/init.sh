@@ -87,4 +87,8 @@ __notify_precmd() {
 autoload -Uz add-zsh-hook
 add-zsh-hook preexec __notify_preexec
 add-zsh-hook precmd __notify_precmd
-# --- End Notification Setup ---
+
+function zle-focus-in() {
+  __wezterm_user_vars_precmd
+}
+zle -N zle-focus-in

@@ -48,14 +48,16 @@ tmux_bindings.keys = {
       action = wezterm.action.ActivateCopyMode
    },
 
+   -- Previous tab
+   {
+      key = "p",
+      mods = "LEADER",
+      action = wezterm.action.ActivateTabRelative(-1)
+   },
+
    -- Paste
    {
       key = "P",
-      mods = "LEADER",
-      action = wezterm.action.PasteFrom "Clipboard"
-   },
-   {
-      key = "p",
       mods = "LEADER",
       action = wezterm.action.PasteFrom "Clipboard"
    },
