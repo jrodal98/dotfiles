@@ -51,10 +51,12 @@ wezterm.on('user-var-changed', function(window, pane, name, value)
   end
 end)
 
+-- Track the last known tmux state per window to avoid redundant updates
+local window_tmux_state = {}
+
 -- Helper function to update tmux config based on active pane's user vars
 function update_tmux_config(window)
    local bindings = require "bindings"
-   local overrides = window:get_config_overrides() or {}
 
    -- Get the active pane from the active tab
    local tab = window:active_tab()
@@ -70,6 +72,19 @@ function update_tmux_config(window)
    -- Check the active pane's WEZTERM_IN_TMUX value
    local user_vars = pane:get_user_vars()
    local in_tmux = user_vars.WEZTERM_IN_TMUX or "0"
+
+   -- Get window ID for tracking state
+   local window_id = window:window_id()
+
+   -- Only update if state has changed
+   if window_tmux_state[window_id] == in_tmux then
+      return
+   end
+
+   -- Update tracked state
+   window_tmux_state[window_id] = in_tmux
+
+   local overrides = window:get_config_overrides() or {}
 
    if in_tmux == '1' then
       -- In tmux: disable WezTerm tmux keybindings to avoid conflicts
