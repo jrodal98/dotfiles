@@ -46,10 +46,32 @@ wezterm.on('user-var-changed', function(window, pane, name, value)
    elseif name == 'event:copy' then
     window:copy_to_clipboard(value, 'Clipboard')
   elseif name == 'WEZTERM_IN_TMUX' then
+   -- User var changed in a specific pane, update window config based on active pane
+   update_tmux_config(window)
+  end
+end)
+
+-- Helper function to update tmux config based on active pane's user vars
+function update_tmux_config(window)
    local bindings = require "bindings"
    local overrides = window:get_config_overrides() or {}
 
-   if value == '1' then
+   -- Get the active pane from the active tab
+   local tab = window:active_tab()
+   if not tab then
+      return
+   end
+
+   local pane = tab:active_pane()
+   if not pane then
+      return
+   end
+
+   -- Check the active pane's WEZTERM_IN_TMUX value
+   local user_vars = pane:get_user_vars()
+   local in_tmux = user_vars.WEZTERM_IN_TMUX or "0"
+
+   if in_tmux == '1' then
       -- In tmux: disable WezTerm tmux keybindings to avoid conflicts
       overrides.leader = { key = "VoidSymbol", mods = "CTRL" }
       overrides.keys = bindings.base_keys
@@ -62,5 +84,9 @@ wezterm.on('user-var-changed', function(window, pane, name, value)
    end
 
    window:set_config_overrides(overrides)
-  end
+end
+
+-- Update tmux config when tabs are switched or status updates
+wezterm.on('update-status', function(window, pane)
+   update_tmux_config(window)
 end)
