@@ -15,6 +15,7 @@ local config = {
    keys = bindings.keys,
    key_tables = bindings.key_tables,
    mouse_bindings = bindings.mouse,
+   leader = bindings.leader,
    ----------- Selection ----------
    quick_select_patterns = select.quick_select_patterns,
    hyperlink_rules = select.hyperlink_rules,

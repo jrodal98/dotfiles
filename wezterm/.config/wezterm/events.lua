@@ -45,5 +45,22 @@ wezterm.on('user-var-changed', function(window, pane, name, value)
       )
    elseif name == 'event:copy' then
     window:copy_to_clipboard(value, 'Clipboard')
+  elseif name == 'WEZTERM_IN_TMUX' then
+   local bindings = require "bindings"
+   local overrides = window:get_config_overrides() or {}
+
+   if value == '1' then
+      -- In tmux: disable WezTerm tmux keybindings to avoid conflicts
+      overrides.leader = { key = "VoidSymbol", mods = "CTRL" }
+      overrides.keys = bindings.base_keys
+      wezterm.log_info('In tmux - WezTerm tmux keybindings disabled')
+   else
+      -- Not in tmux: enable WezTerm tmux-like keybindings
+      overrides.leader = bindings.leader
+      overrides.keys = nil
+      wezterm.log_info('Not in tmux - WezTerm tmux keybindings enabled')
+   end
+
+   window:set_config_overrides(overrides)
   end
 end)

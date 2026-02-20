@@ -6,7 +6,7 @@ local META = "CTRL|SHIFT|ALT|SUPER"
 local bindings = {}
 
 -- default bindings: https://wezfurlong.org/wezterm/config/default-keys.html
-bindings.keys = {
+bindings.base_keys = {
    -- Enable Shift+Enter for multi-line input in Claude Code
    { key = "\r", mods = "SHIFT", action = wezterm.action { SendString = "\n" } },
    { key = "+", mods = "SUPER|SHIFT", action = "IncreaseFontSize" },
@@ -46,6 +46,19 @@ bindings.keys = {
    { key = "x", mods = META, action = wezterm.action.ActivateCopyMode },
    { key = "c", mods = META, action = wezterm.action.ActivateCopyMode },
 }
+
+-- Merge tmux keybindings into default keys
+local tmux_bindings = require "tmux_bindings"
+local all_keys = {}
+for _, binding in ipairs(bindings.base_keys) do
+   table.insert(all_keys, binding)
+end
+for _, binding in ipairs(tmux_bindings.keys) do
+   table.insert(all_keys, binding)
+end
+
+bindings.keys = all_keys
+bindings.leader = tmux_bindings.leader
 
 bindings.key_tables = {
    copy_mode = {
