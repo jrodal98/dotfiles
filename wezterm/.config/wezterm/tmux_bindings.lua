@@ -2,10 +2,10 @@ local wezterm = require "wezterm"
 
 local tmux_bindings = {}
 
--- Tmux-style leader key (matching your tmux prefix: C-Space)
-tmux_bindings.leader = { key = "Space", mods = "CTRL", timeout_milliseconds = 1000 }
+-- Tmux-style leader key
+tmux_bindings.leader = { key = "j", mods = "CTRL", timeout_milliseconds = 1000 }
 
--- Tmux-style keybindings (disabled when WEZTERM_IN_TMUX=1)
+-- Tmux-style keybindings (always active)
 tmux_bindings.keys = {
    -- Pane splitting
    {
@@ -60,13 +60,6 @@ tmux_bindings.keys = {
       key = "P",
       mods = "LEADER",
       action = wezterm.action.PasteFrom "Clipboard"
-   },
-
-   -- Send C-Space to the terminal when pressed twice
-   {
-      key = "Space",
-      mods = "LEADER|CTRL",
-      action = wezterm.action.SendKey { key = "Space", mods = "CTRL" }
    },
 
    -- Close current pane
