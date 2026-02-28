@@ -103,3 +103,10 @@ alias ls='ls --color=auto'
 
 touch "${HOME}/.env" && source "${HOME}/.env"
 # zprof # uncomment top and bottom of file to profile startup
+
+# History configuration - prevent massive history files
+HISTSIZE=50000           # Commands in memory
+SAVEHIST=10000           # Commands saved to disk
+setopt HIST_IGNORE_DUPS  # Don't save duplicate commands
+setopt HIST_IGNORE_SPACE # Don't save commands starting with space
+setopt HIST_EXPIRE_DUPS_FIRST # Expire duplicates first when trimming
