@@ -7,7 +7,7 @@ local actions = {}
 
 local nvim
 if wezterm.hostname() == "jrodal-mbp" then
-   nvim = "/usr/local/bin/nvim"
+   nvim = "/opt/homebrew/bin/nvim"
 else
    nvim = "nvim"
 end
