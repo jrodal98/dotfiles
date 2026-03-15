@@ -1,0 +1,41 @@
+#!/bin/sh
+
+# export META_CLAUDE_CODE_RELEASE=latest
+export CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1
+
+# Check if --model or --no-yolo is passed as an argument
+has_model=false
+no_yolo=false
+for arg in "$@"; do
+  case "$arg" in
+    --model | --model=*)
+      has_model=true
+      ;;
+    --no-yolo)
+      no_yolo=true
+      ;;
+  esac
+done
+
+# Filter out --no-yolo and rebuild positional params
+args=""
+for arg in "$@"; do
+  if [ "$arg" != "--no-yolo" ]; then
+    args="$args \"$(printf '%s' "$arg" | sed 's/"/\\"/g')\""
+  fi
+done
+eval set -- "$args"
+
+# Default to yolo mode unless --no-yolo is passed or already inside claude code
+if [ "$no_yolo" = false ] && [ "$INSIDE_CLAUDE_CODE" = "" ]; then
+  set -- --dangerously-skip-permissions --allow-dangerously-skip-permissions "$@"
+fi
+
+export INSIDE_CLAUDE_CODE=1
+
+if [ "$has_model" = true ]; then
+  exec /usr/local/bin/claude --teammate-mode in-process "$@"
+else
+  # exec /usr/local/bin/claude --teammate-mode in-process --model 'opus4.6[1m]' "$@"
+  exec /usr/local/bin/claude --teammate-mode in-process "$@"
+fi
