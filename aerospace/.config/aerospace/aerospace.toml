@@ -9,11 +9,15 @@ persistent-workspaces = []
 # But the feature is very helpful.
 # Normalizations eliminate all sorts of weird tree configurations that don't make sense.
 # Give normalizations a chance and enable them back.
-enable-normalization-flatten-containers = false
-enable-normalization-opposite-orientation-for-nested-containers = false
+enable-normalization-flatten-containers = true
+enable-normalization-opposite-orientation-for-nested-containers = true
+
+start-at-login = true
 
 # Mouse follows focus when focused monitor changes
 on-focused-monitor-changed = ['move-mouse monitor-lazy-center']
+
+default-root-container-layout = 'tiles'
 
 [mode.main.binding]
     # See: https://nikitabobko.github.io/AeroSpace/goodies#open-a-new-window-with-applescript
@@ -34,21 +38,10 @@ on-focused-monitor-changed = ['move-mouse monitor-lazy-center']
     cmd-shift-q = 'close'
     cmd-b = 'exec-and-forget open -a "Google Chrome"'
 
-    cmd-f = 'fullscreen'
+    cmd-shift-f = 'fullscreen'
 
-    cmd-s = 'layout v_accordion' # 'layout stacking' in i3
-    cmd-w = 'layout h_accordion' # 'layout tabbed' in i3
-    cmd-e = 'layout tiles horizontal vertical' # 'layout toggle split' in i3
-
+    cmd-semicolon = 'layout tiles horizontal vertical'
     cmd-shift-space = 'layout floating tiling' # 'floating toggle' in i3
-
-    # Not supported, because this command is redundant in AeroSpace mental model.
-    # See: https://nikitabobko.github.io/AeroSpace/guide#floating-windows
-    #cmd-space = 'focus toggle_tiling_floating'
-
-    # `focus parent`/`focus child` are not yet supported, and it's not clear whether they
-    # should be supported at all https://github.com/nikitabobko/AeroSpace/issues/5
-    # cmd-a = 'focus parent'
 
     cmd-1 = 'workspace 1'
     cmd-2 = 'workspace 2'
@@ -72,7 +65,7 @@ on-focused-monitor-changed = ['move-mouse monitor-lazy-center']
     cmd-shift-9 = ['move-node-to-workspace 9', 'workspace 9']
     cmd-shift-0 = ['move-node-to-workspace 10', 'workspace 10']
 
-    cmd-shift-c = 'reload-config'
+    cmd-shift-r = 'reload-config'
 
     cmd-r = 'mode resize'
 
