@@ -6,7 +6,7 @@ local os = require "os"
 local actions = {}
 
 local nvim
-if wezterm.hostname() == "jrodal-mbp" then
+if wezterm.hostname() == "jrodal-mbp" or wezterm.hostname() == "jrodal-mac" then
    nvim = "/opt/homebrew/bin/nvim"
 else
    nvim = "nvim"
