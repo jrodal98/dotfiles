@@ -1,11 +1,11 @@
-local wezterm = require "wezterm"
+local dotgk = require "dotgk"
 
 local aesthetics = {}
 
 -- not actually using this right now since default looks better
 aesthetics.color_scheme = "tokyonight"
 
-if wezterm.hostname() == "PW08WPZH" then
+if dotgk.check "meta/windows" then
    aesthetics.window_background_opacity = 0
 else
    aesthetics.window_background_opacity = 0.75
@@ -13,13 +13,13 @@ end
 
 aesthetics.hide_tab_bar_if_only_one_tab = true
 
-if wezterm.hostname() == "jrodal-mbp" or wezterm.hostname() == "jrodal-mac" then
+if dotgk.check "meta/mac" then
    aesthetics.font_size = 20
 else
    aesthetics.font_size = 16
 end
 
-if wezterm.hostname() == "jrodal-mbp" or wezterm.hostname() == "jrodal-mac" then
+if dotgk.check "meta/mac" then
    aesthetics.window_decorations = "RESIZE"
 else
    aesthetics.window_decorations = "INTEGRATED_BUTTONS|RESIZE"

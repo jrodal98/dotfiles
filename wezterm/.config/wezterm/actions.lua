@@ -1,12 +1,13 @@
 local wezterm = require "wezterm"
 local select = require "select"
+local dotgk = require "dotgk"
 local io = require "io"
 local os = require "os"
 
 local actions = {}
 
 local nvim
-if wezterm.hostname() == "jrodal-mbp" or wezterm.hostname() == "jrodal-mac" then
+if dotgk.check "meta/mac" then
    nvim = "/opt/homebrew/bin/nvim"
 else
    nvim = "nvim"
