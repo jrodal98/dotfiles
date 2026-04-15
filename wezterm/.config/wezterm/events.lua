@@ -38,23 +38,12 @@ wezterm.on('user-var-changed', function(window, pane, name, value)
   if name == 'event:notify' then
       local ok, fields = pcall(wezterm.json_parse, value)
       fields = ok and type(fields) == "table" and fields or {}
-      if dotgk.check "meta/mac" then
-        local title = fields.title or 'wezterm'
-        local message = fields.message or value
-        local args = { 'terminal-notifier', '-title', title, '-message', message }
-        if fields.url then
-           table.insert(args, '-open')
-           table.insert(args, fields.url)
-        end
-        wezterm.background_child_process(args)
-      else
-        window:toast_notification(
-          fields.title or 'wezterm',
-          fields.message or value,
-          fields.url or nil,
-          fields.timeout or nil
-        )
-      end
+      window:toast_notification(
+         fields.title or 'wezterm',
+         fields.message or value,
+         fields.url or nil,
+         fields.timeout or nil
+      )
    elseif name == 'event:copy' then
     window:copy_to_clipboard(value, 'Clipboard')
   end
