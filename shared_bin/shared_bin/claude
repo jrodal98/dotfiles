@@ -1,6 +1,6 @@
 #!/bin/sh
 
-# export META_CLAUDE_CODE_RELEASE=latest
+export META_CLAUDE_CODE_RELEASE=latest
 export CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1
 
 # Check if --model or --no-yolo is passed as an argument
