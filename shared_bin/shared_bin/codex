@@ -1,0 +1,37 @@
+#!/usr/bin/env bash
+
+no_yolo=false
+has_yolo=false
+args=()
+parsing_options=true
+
+for arg in "$@"; do
+  if [ "$parsing_options" = true ]; then
+    case "$arg" in
+      --)
+        parsing_options=false
+        args+=("$arg")
+        ;;
+      --no-yolo)
+        no_yolo=true
+        ;;
+      --yolo | --dangerously-bypass-approvals-and-sandbox)
+        has_yolo=true
+        args+=("$arg")
+        ;;
+      *)
+        args+=("$arg")
+        ;;
+    esac
+  else
+    args+=("$arg")
+  fi
+done
+
+if [ "$no_yolo" = false ] && [ "$has_yolo" = false ] && [ "${INSIDE_CODEX_CODE:-}" = "" ]; then
+  args=(--yolo "${args[@]}")
+fi
+
+export INSIDE_CODEX_CODE=1
+
+exec /usr/local/bin/codex "${args[@]}"
