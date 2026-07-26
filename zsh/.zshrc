@@ -25,6 +25,8 @@ alias gsl='git smartlog'
 
 setopt rm_star_silent
 
+# allow comments in interactive shell
+setopt INTERACTIVE_COMMENTS
 
 export EDITOR='nvim'
 export VISUAL='nvim'
