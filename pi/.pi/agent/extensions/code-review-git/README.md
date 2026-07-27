@@ -1,16 +1,21 @@
-# pi-code-review
+# code-review-git
 
 Multi-model, multi-focus code review extension for [pi](https://pi.dev), using
 plain **git** for target resolution.
 
-This is a separate stow package from `pi` on purpose: at work I run a
-Meta-internal variant of this extension (Sapling/Phabricator-aware), so this
-package must **not** be stowed there. Stow it only on machines where pi is used
-with git:
+At work I run a Meta-internal variant of this extension
+(Sapling/Phabricator-aware) that lives at `extensions/code-review/` in a
+separate local repo. This git version is stowed everywhere as part of the `pi`
+package but disabled on Meta machines via `~/.pi/agent/settings.json`:
 
-```sh
-cd ~/dotfiles && stow pi-code-review
+```json
+{
+  "extensions": ["-extensions/code-review-git/index.ts"]
+}
 ```
+
+On non-Meta machines no configuration is needed — pi auto-discovers
+`~/.pi/agent/extensions/code-review-git/index.ts`.
 
 ## Usage
 
