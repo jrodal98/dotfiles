@@ -22,7 +22,7 @@ const DEFAULTS: ReviewConfig = {
 	bestClaude: "anthropic/claude-fable-5",
 	bestGpt: "openai/gpt-5.6-sol",
 	focusSuggestModel: "anthropic/claude-haiku-4-5",
-	maxConcurrency: 4,
+	maxConcurrency: 16,
 	defaultSpeed: "normal",
 	maxInlineDiffBytes: 300_000,
 };

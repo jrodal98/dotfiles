@@ -36,6 +36,6 @@ export INSIDE_CLAUDE_CODE=1
 if [ "$has_model" = true ]; then
   exec /usr/local/bin/claude --teammate-mode in-process "$@"
 else
-  # exec /usr/local/bin/claude --teammate-mode in-process --model 'opus4.6[1m]' "$@"
-  exec /usr/local/bin/claude --teammate-mode in-process "$@"
+  exec /usr/local/bin/claude --teammate-mode in-process --model 'claude-fable-5[1m]' "$@"
+  # exec /usr/local/bin/claude --teammate-mode in-process "$@"
 fi

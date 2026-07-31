@@ -33,5 +33,7 @@ if [ "$no_yolo" = false ] && [ "$has_yolo" = false ] && [ "${INSIDE_CODEX_CODE:-
 fi
 
 export INSIDE_CODEX_CODE=1
+export META_CODEX_RELEASE=latest
+export META_CODEX_SHOW_GPT56=1
 
 exec /usr/local/bin/codex "${args[@]}"

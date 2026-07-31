@@ -1,0 +1,13 @@
+#!/usr/bin/env bash
+
+export PI_OPENAI_FAST_MODE=1
+export PI_OPUS_FAST_MODE=1
+
+# Force-enable the llm-rules extension (Devmate Rules/Skills preamble). The
+# launcher only sets this when the cpe_3p_ai_pi_llm_rules GK passes, and it
+# fails for every one of my IDs, so the extension would otherwise return on its
+# first line. Subagents inherit it: env is process-wide and the
+# meta-launcher-extensions replay applies llm-rules to them too.
+export META_PI_LLM_RULES=1
+
+exec /usr/local/bin/pi "$@"
