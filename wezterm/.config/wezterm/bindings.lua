@@ -9,6 +9,8 @@ local bindings = {}
 bindings.base_keys = {
    -- Enable Shift+Enter for multi-line input in Claude Code
    { key = "\r", mods = "SHIFT", action = wezterm.action { SendString = "\n" } },
+   -- Disable default Alt+Enter -> ToggleFullScreen
+   { key = "Enter", mods = "ALT", action = wezterm.action.DisableDefaultAssignment },
    { key = "+", mods = "SUPER|SHIFT", action = "IncreaseFontSize" },
    { key = "+", mods = "CTRL|SHIFT", action = "IncreaseFontSize" },
    {
