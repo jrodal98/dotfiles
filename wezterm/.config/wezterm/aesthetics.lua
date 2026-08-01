@@ -13,6 +13,11 @@ end
 
 aesthetics.hide_tab_bar_if_only_one_tab = true
 
+-- Also used by enkaku.lua to re-apply the size to `wezterm connect` windows,
+-- which ignore initial_cols/initial_rows (wezterm#6826).
+aesthetics.initial_cols = 100
+aesthetics.initial_rows = 40
+
 if dotgk.check "meta/mac" then
    aesthetics.font_size = 20
 else

@@ -6,6 +6,12 @@ local misc = {}
 misc.exit_behavior = "Close"
 misc.audible_bell = "Disabled"
 
+-- Default is 3500, which silently truncates actions.open_pane_in_vim.
+misc.scrollback_lines = 20000
+
+-- Default stops at path separators; this keeps paths/targets in one word.
+misc.selection_word_boundary = " \t\n{}[]()'\"`,;:="
+
 misc.launch_menu = {}
 misc.default_domain = nil
 if wezterm.target_triple == "x86_64-pc-windows-msvc" then
