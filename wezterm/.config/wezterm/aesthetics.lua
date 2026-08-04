@@ -1,34 +1,15 @@
 local dotgk = require "dotgk"
 
-local aesthetics = {}
+local is_mac = dotgk.check "meta/mac"
 
--- not actually using this right now since default looks better
-aesthetics.color_scheme = "tokyonight"
-
-if dotgk.check "meta/windows" then
-   aesthetics.window_background_opacity = 0
-else
-   aesthetics.window_background_opacity = 0.75
-end
-
-aesthetics.hide_tab_bar_if_only_one_tab = true
-
--- Also used by enkaku.lua to re-apply the size to `wezterm connect` windows,
--- which ignore initial_cols/initial_rows (wezterm#6826).
-aesthetics.initial_cols = 100
-aesthetics.initial_rows = 40
-
-if dotgk.check "meta/mac" then
-   aesthetics.font_size = 20
-else
-   aesthetics.font_size = 16
-end
-
-if dotgk.check "meta/mac" then
-   aesthetics.window_decorations = "RESIZE"
-else
-   aesthetics.window_decorations = "INTEGRATED_BUTTONS|RESIZE"
-end
--- Configures whether the window has a title bar and/or resizable border.
-
-return aesthetics
+return {
+   window_background_opacity = dotgk.check "meta/windows" and 0 or 0.75,
+   hide_tab_bar_if_only_one_tab = true,
+   -- Also used by enkaku.lua to re-apply the size to `wezterm connect` windows,
+   -- which ignore initial_cols/initial_rows (wezterm#6826).
+   initial_cols = 100,
+   initial_rows = 40,
+   font_size = is_mac and 20 or 16,
+   -- Configures whether the window has a title bar and/or resizable border.
+   window_decorations = is_mac and "RESIZE" or "INTEGRATED_BUTTONS|RESIZE",
+}

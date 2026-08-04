@@ -1,4 +1,5 @@
 local wezterm = require "wezterm"
+local act = wezterm.action
 
 local tmux_bindings = {}
 
@@ -6,117 +7,37 @@ local tmux_bindings = {}
 tmux_bindings.leader = { key = "j", mods = "CTRL", timeout_milliseconds = 1000 }
 
 -- Tmux-style keybindings (always active)
-tmux_bindings.keys = {
+local leader_keys = {
    -- Pane splitting
-   {
-      key = "|",
-      mods = "LEADER",
-      action = wezterm.action.SplitHorizontal { domain = "CurrentPaneDomain" }
-   },
-   {
-      key = "-",
-      mods = "LEADER",
-      action = wezterm.action.SplitVertical { domain = "CurrentPaneDomain" }
-   },
-
+   ["|"] = act.SplitHorizontal { domain = "CurrentPaneDomain" },
+   ["-"] = act.SplitVertical { domain = "CurrentPaneDomain" },
    -- Pane navigation
-   {
-      key = "h",
-      mods = "LEADER",
-      action = wezterm.action.ActivatePaneDirection "Left"
-   },
-   {
-      key = "j",
-      mods = "LEADER",
-      action = wezterm.action.ActivatePaneDirection "Down"
-   },
-   {
-      key = "k",
-      mods = "LEADER",
-      action = wezterm.action.ActivatePaneDirection "Up"
-   },
-   {
-      key = "l",
-      mods = "LEADER",
-      action = wezterm.action.ActivatePaneDirection "Right"
-   },
-
+   h = act.ActivatePaneDirection "Left",
+   j = act.ActivatePaneDirection "Down",
+   k = act.ActivatePaneDirection "Up",
+   l = act.ActivatePaneDirection "Right",
    -- Copy mode
-   {
-      key = "[",
-      mods = "LEADER",
-      action = wezterm.action.ActivateCopyMode
-   },
-
-   -- Previous tab
-   {
-      key = "p",
-      mods = "LEADER",
-      action = wezterm.action.ActivateTabRelative(-1)
-   },
-
+   ["["] = act.ActivateCopyMode,
+   -- Tabs
+   c = act.SpawnTab "CurrentPaneDomain",
+   n = act.ActivateTabRelative(1),
+   p = act.ActivateTabRelative(-1),
    -- Paste
-   {
-      key = "P",
-      mods = "LEADER",
-      action = wezterm.action.PasteFrom "Clipboard"
-   },
-
-   -- Close current pane
-   {
-      key = "x",
-      mods = "LEADER",
-      action = wezterm.action.CloseCurrentPane { confirm = true }
-   },
-
-   -- Zoom pane
-   {
-      key = "z",
-      mods = "LEADER",
-      action = wezterm.action.TogglePaneZoomState
-   },
-
-   -- Create new tab
-   {
-      key = "c",
-      mods = "LEADER",
-      action = wezterm.action.SpawnTab "CurrentPaneDomain"
-   },
-
-   -- Next tab
-   {
-      key = "n",
-      mods = "LEADER",
-      action = wezterm.action.ActivateTabRelative(1)
-   },
-
-   -- Detach
-   {
-      key = "d",
-      mods = "LEADER",
-      action = wezterm.action.QuitApplication
-   },
-
-   -- Pane selection mode
-   {
-      key = "q",
-      mods = "LEADER",
-      action = wezterm.action.PaneSelect
-   },
-
-   -- Rotate panes
-   {
-      key = "o",
-      mods = "LEADER",
-      action = wezterm.action.RotatePanes "Clockwise"
-   },
-
-   -- Swap pane mode
-   {
-      key = "Space",
-      mods = "LEADER",
-      action = wezterm.action.PaneSelect { mode = "SwapWithActive" }
-   },
+   P = act.PasteFrom "Clipboard",
+   -- Panes
+   x = act.CloseCurrentPane { confirm = true },
+   z = act.TogglePaneZoomState,
+   q = act.PaneSelect,
+   o = act.RotatePanes "Clockwise",
+   Space = act.PaneSelect { mode = "SwapWithActive" },
+   -- Quit. Note: unlike tmux detach, this closes EVERY window (for mux
+   -- domains the server keeps running, so it acts like a detach there).
+   d = act.QuitApplication,
 }
+
+tmux_bindings.keys = {}
+for key, action in pairs(leader_keys) do
+   table.insert(tmux_bindings.keys, { key = key, mods = "LEADER", action = action })
+end
 
 return tmux_bindings

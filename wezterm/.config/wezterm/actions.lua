@@ -1,23 +1,27 @@
 local wezterm = require "wezterm"
-local select = require "select"
+local patterns = require "patterns"
 local dotgk = require "dotgk"
-local io = require "io"
-local os = require "os"
+local misc = require "misc"
 
 local actions = {}
 
-local nvim
-if dotgk.check "meta/mac" then
-   nvim = "/opt/homebrew/bin/nvim"
-else
-   nvim = "nvim"
-end
+-- wezterm on macOS doesn't inherit the shell PATH, so homebrew nvim needs an
+-- absolute path.
+local nvim = dotgk.check "meta/mac" and "/opt/homebrew/bin/nvim" or "nvim"
 
 actions.open_url_action = wezterm.action.QuickSelectArgs {
    label = "open url",
-   patterns = select.quick_select_patterns,
+   -- Only patterns that resolve to something openable; the full
+   -- quick_select_patterns list includes things like buck targets that
+   -- wezterm.open_with can't do anything with.
+   patterns = { patterns.url, patterns.diff_paste_task },
    action = wezterm.action_callback(function(window, pane)
       local url = window:get_selection_text_for_pane(pane)
+      -- Rewrite diff/paste/task ids (D123, P123, T123) the same way
+      -- hyperlink_rules does, so they open as fburls instead of raw text.
+      if url:match "^[dDpPtT]%d+$" then
+         url = "https://fburl.com/b/" .. url
+      end
       wezterm.log_info("opening url: " .. url)
       wezterm.open_with(url)
    end),
@@ -25,11 +29,8 @@ actions.open_url_action = wezterm.action.QuickSelectArgs {
 
 -- https://wezfurlong.org/wezterm/config/lua/wezterm/on.html#custom-actions
 actions.open_pane_in_vim = wezterm.action_callback(function(window, pane)
-   -- Retrieve the current viewport's text.
-   --
-   -- Note: You could also pass an optional number of lines (eg: 2000) to
-   -- retrieve that number of lines starting from the bottom of the viewport.
-   local viewport_text = pane:get_lines_as_text(100000)
+   -- Retrieve the scrollback text (misc.scrollback_lines caps what exists).
+   local viewport_text = pane:get_lines_as_text(misc.scrollback_lines)
 
    -- Create a temporary file to pass to vim
    local name = os.tmpname()

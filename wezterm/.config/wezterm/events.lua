@@ -1,5 +1,4 @@
 local wezterm = require "wezterm"
-local dotgk = require "dotgk"
 local aesthetics = require "aesthetics"
 
 wezterm.on("toggle-opacity", function(window, _)
@@ -54,18 +53,13 @@ wezterm.on("format-tab-title", function(tab, _, _, _, _, _)
 end)
 
 -- https://wezterm.org/config/lua/pane/get_user_vars.html
-wezterm.on('user-var-changed', function(window, pane, name, value)
-  wezterm.log_info('var', name, value)
-  if name == 'event:notify' then
+wezterm.on("user-var-changed", function(window, pane, name, value)
+   wezterm.log_info("var", name, value)
+   if name == "event:notify" then
       local ok, fields = pcall(wezterm.json_parse, value)
       fields = ok and type(fields) == "table" and fields or {}
-      window:toast_notification(
-         fields.title or 'wezterm',
-         fields.message or value,
-         fields.url or nil,
-         fields.timeout or nil
-      )
-   elseif name == 'event:copy' then
-    window:copy_to_clipboard(value, 'Clipboard')
-  end
+      window:toast_notification(fields.title or "wezterm", fields.message or value, fields.url, fields.timeout)
+   elseif name == "event:copy" then
+      window:copy_to_clipboard(value, "Clipboard")
+   end
 end)

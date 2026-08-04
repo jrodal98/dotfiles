@@ -15,8 +15,6 @@
 local wezterm = require "wezterm"
 local aesthetics = require "aesthetics"
 
-local enkaku = {}
-
 -- `wezterm cli activate-pane` can focus a pane but cannot raise the OS window;
 -- only lua running inside the GUI can. So `ek claude focus` (and the wezterm
 -- grid code) sets the window title to this sentinel and expects the config to
@@ -91,7 +89,14 @@ wezterm.on("window-config-reloaded", function(window, pane)
    local cols, rows = dims.cols, dims.viewport_rows
    local px, py = dims.pixel_width, dims.pixel_height
    wezterm.log_info(
-      string.format("enkaku-dims: window=%s cols=%s rows=%s px=%s py=%s", id, tostring(cols), tostring(rows), tostring(px), tostring(py))
+      string.format(
+         "enkaku-dims: window=%s cols=%s rows=%s px=%s py=%s",
+         id,
+         tostring(cols),
+         tostring(rows),
+         tostring(px),
+         tostring(py)
+      )
    )
 
    if not ENABLE_CONNECT_RESIZE then
@@ -121,5 +126,3 @@ wezterm.on("window-config-reloaded", function(window, pane)
 
    window:set_inner_size(target_width, target_height)
 end)
-
-return enkaku

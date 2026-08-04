@@ -14,9 +14,12 @@ local function load_dotgk()
    local content = f:read "*a"
    f:close()
 
-   local chunk = load(content)
+   local chunk = load(content, "dotgk-cache")
    if chunk then
-      return chunk()
+      local ok, result = pcall(chunk)
+      if ok then
+         return result
+      end
    end
    return nil
 end

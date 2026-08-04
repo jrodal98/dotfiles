@@ -10,35 +10,16 @@ if dotgk.check "meta" then
    require "enkaku"
 end
 
-local bindings = require "bindings"
-local select = require "select"
-local aesthetics = require "aesthetics"
-local misc = require "misc"
-
-local config = {
-   ----------- Aesthetics ----------
-   window_background_opacity = aesthetics.window_background_opacity,
-   hide_tab_bar_if_only_one_tab = aesthetics.hide_tab_bar_if_only_one_tab,
-   font_size = aesthetics.font_size,
-   window_decorations = aesthetics.window_decorations,
-   initial_cols = aesthetics.initial_cols,
-   initial_rows = aesthetics.initial_rows,
-   ----------- Bindings ----------
-   keys = bindings.keys,
-   key_tables = bindings.key_tables,
-   mouse_bindings = bindings.mouse,
-   leader = bindings.leader,
-   ----------- Selection ----------
-   quick_select_patterns = select.quick_select_patterns,
-   hyperlink_rules = select.hyperlink_rules,
-   ----------- Misc ----------
-   -- prevents terminal hanging when exiting with ctrl-d
-   exit_behavior = misc.exit_behavior,
-   audible_bell = misc.audible_bell,
-   scrollback_lines = misc.scrollback_lines,
-   selection_word_boundary = misc.selection_word_boundary,
-   default_domain = misc.default_domain,
-   launch_menu = misc.launch_menu,
-}
+-- Each module returns a table of wezterm config options; merge them all.
+-- aesthetics: opacity, font, window size/decorations
+-- bindings: keys, key_tables, mouse_bindings, leader (incl. tmux_bindings)
+-- select: quick_select_patterns, hyperlink_rules
+-- misc: exit/bell/scrollback/selection, windows launch menu
+local config = {}
+for _, name in ipairs { "aesthetics", "bindings", "select", "misc" } do
+   for key, value in pairs(require(name)) do
+      config[key] = value
+   end
+end
 
 return config
