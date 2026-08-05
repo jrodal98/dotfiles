@@ -1,0 +1,102 @@
+{
+  "_comment": "Generic bashguard base rules: commands that hang a headless agent shell (interactive editors, pagers, unbounded poll loops). See engine.ts for the matcher vocabulary. Site-specific layers are merged on top by ~/.pi/agent/bashguard/local.ts (or BASHGUARD_RULES); later layers replace rules by id.",
+  "rules": [
+    {
+      "id": "no-unbounded-pgrep-poll-while",
+      "command": "while",
+      "arg_regex": "(^|\\s)!?\\s*pgrep(\\s+-\\w+)*\\s+-\\w*f\\b",
+      "reason": "pgrep -f inside a while poll matches the loop's own command line (the pattern is part of it), so the loop never exits and hangs the session. Poll with pgrep -x <binary>, bracket-escape the pattern (e.g. 'jobs_all[.]txt'), or check output-file growth with bounded sleeps instead."
+    },
+    {
+      "id": "no-unbounded-pgrep-poll-until",
+      "command": "until",
+      "arg_regex": "(^|\\s)!?\\s*pgrep(\\s+-\\w+)*\\s+-\\w*f\\b",
+      "reason": "pgrep -f inside an until poll matches the loop's own command line (the pattern is part of it), giving an instant false success or a hang. Poll with pgrep -x <binary>, bracket-escape the pattern (e.g. 'jobs_all[.]txt'), or check output-file growth with bounded sleeps instead."
+    },
+    {
+      "id": "no-interactive-git-rebase",
+      "command": "git",
+      "subcommand": "rebase",
+      "any_flag_regex": "^(-i|--interactive)$",
+      "reason": "git rebase -i opens an interactive editor and hangs a headless shell. Use a non-interactive alternative (e.g. git rebase --onto, git commit --fixup + rebase --autosquash with GIT_SEQUENCE_EDITOR=true) or ask the user."
+    },
+    {
+      "id": "no-interactive-git-add-patch",
+      "command": "git",
+      "subcommand": "add",
+      "any_flag_regex": "^(-p|--patch|-i|--interactive|-e|--edit)$",
+      "reason": "git add -p/-i/-e is interactive and hangs a headless shell. Stage whole files, or build a partial change in a temp file instead."
+    },
+    {
+      "id": "no-interactive-git-editor",
+      "command": "git",
+      "subcommand_in": ["commit", "merge", "revert"],
+      "unless_any_flag": [
+        "-m",
+        "--message",
+        "-am",
+        "-F",
+        "--file",
+        "-C",
+        "--reuse-message",
+        "--no-edit",
+        "--ff-only",
+        "--squash",
+        "--no-commit",
+        "--abort",
+        "--quit",
+        "--dry-run",
+        "--help"
+      ],
+      "reason": "git commit/merge/revert without a message flag opens an interactive editor and hangs a headless shell. Pass -m '<msg>' (or --no-edit where applicable)."
+    },
+    {
+      "id": "no-interactive-crontab-edit",
+      "command": "crontab",
+      "any_flag": ["-e"],
+      "reason": "crontab -e opens an interactive editor and hangs a headless shell. Use 'crontab -l' to read and 'crontab <file>' to install a new table."
+    },
+    {
+      "id": "no-interactive-visudo",
+      "command": "visudo",
+      "reason": "visudo opens an interactive editor and hangs a headless shell. Ask the user to edit sudoers."
+    },
+    {
+      "id": "no-interactive-editor-vim",
+      "command": "vim",
+      "reason": "vim is interactive and hangs a headless shell. Use your file read/edit tools instead."
+    },
+    {
+      "id": "no-interactive-editor-nvim",
+      "command": "nvim",
+      "unless_any_flag": ["--headless"],
+      "reason": "nvim is interactive and hangs a headless shell (headless test runs with --headless are allowed; wrap them in 'timeout'). Use your file read/edit tools instead."
+    },
+    {
+      "id": "no-interactive-editor-vi",
+      "command": "vi",
+      "reason": "vi is interactive and hangs a headless shell. Use your file read/edit tools instead."
+    },
+    {
+      "id": "no-interactive-editor-nano",
+      "command": "nano",
+      "reason": "nano is interactive and hangs a headless shell. Use your file read/edit tools instead."
+    },
+    {
+      "id": "no-interactive-editor-emacs",
+      "command": "emacs",
+      "unless_any_flag": ["--batch", "-batch", "--script"],
+      "reason": "emacs without --batch/--script is interactive and hangs a headless shell. Use your file read/edit tools instead."
+    },
+    {
+      "id": "no-interactive-pager-less",
+      "command": "less",
+      "reason": "less is an interactive pager and hangs a headless shell. Pipe to 'head -n N' or 'cat', or read the file directly."
+    },
+    {
+      "id": "no-interactive-pager-more",
+      "command": "more",
+      "reason": "more is an interactive pager and hangs a headless shell. Pipe to 'head -n N' or 'cat', or read the file directly."
+    }
+  ]
+}
