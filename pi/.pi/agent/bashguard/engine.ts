@@ -38,6 +38,8 @@
  *                       is in this list; handles `python3 X.py`,
  *                       `python3 -m X`, `./X.py`
  *   unless_any_flag:    EXEMPTER — rule does not fire if any token matches
+ *   unless_arg_regex:   EXEMPTER — rule does not fire if this regex matches
+ *                       the args (inverse of arg_regex)
  *   exempt_shallow_via: EXEMPTER — {"flags": [...], "max_value": N}; rule
  *                       does not fire if a listed flag carries an int <= N
  *   severity:           "block" (default) or "warn"
@@ -746,6 +748,11 @@ registerMatcher("python_target_in", (v, seg) => {
 registerExempter("unless_any_flag", (v, seg) => {
   const flags = new Set(asList(v));
   return seg.some((t) => flags.has(t));
+});
+registerExempter("unless_arg_regex", (v, seg) => {
+  if (typeof v !== "string") return false;
+  const re = compileRegex(v);
+  return re !== null && re.test(seg.slice(1).join(" "));
 });
 registerExempter("exempt_shallow_via", (v, seg) =>
   typeof v === "object" && v !== null && hasShallowVia(seg, v as { flags?: string[]; max_value?: number }),

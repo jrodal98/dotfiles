@@ -111,6 +111,32 @@
       "reason": "Dumping private key material puts secrets into the agent context and logs. Public halves (*.pub) are fine; for anything else, ask the user."
     },
     {
+      "id": "no-upload-file-curl",
+      "command": "curl",
+      "arg_regex": "(^|\\s)(-d|--data|--data-binary|--data-ascii|--data-urlencode|-F|--form)(\\s+|=)[^\\s]*@|(^|\\s)-[dF]@|(^|\\s)(-T|--upload-file)(\\s+|=)\\S",
+      "unless_arg_regex": "(^|\\s|/|@)(localhost|127\\.0\\.0\\.1|\\[::1\\])(:|/|\\s|$)",
+      "reason": "Uploading a local file to a URL (curl -d @file / -F x=@file / -T file) is the exfiltration chokepoint: once data is laundered into another file the guard can't tell what's in it. If this is a legitimate upload, ask the user to run it (or to allow-list it)."
+    },
+    {
+      "id": "no-upload-file-wget",
+      "command": "wget",
+      "arg_regex": "(^|\\s)(--post-file|--body-file)(=|\\s)\\S",
+      "unless_arg_regex": "(^|\\s|/|@)(localhost|127\\.0\\.0\\.1|\\[::1\\])(:|/|\\s|$)",
+      "reason": "wget --post-file/--body-file uploads a local file to a URL \u2014 an exfiltration chokepoint. If this is a legitimate upload, ask the user to run it."
+    },
+    {
+      "id": "no-raw-network-pipe",
+      "command_in": ["nc", "ncat", "netcat", "socat", "telnet"],
+      "unless_any_flag": ["-z", "-l", "--listen", "--help", "-h"],
+      "reason": "Raw network pipes (nc/ncat/socat/telnet) can stream local data to an arbitrary host and bypass normal tooling. Port checks (nc -z) and listeners (-l) are allowed; for anything else use the proper client (curl to a known endpoint) or ask the user."
+    },
+    {
+      "id": "no-remote-file-copy",
+      "command_in": ["scp", "sftp", "rsync"],
+      "arg_regex": "(^|\\s)[\\w.-]+@[\\w.-]+:|(^|\\s)(rsync|ssh)://",
+      "reason": "Copying files to a remote host (scp/sftp/rsync to user@host:path) is an exfiltration chokepoint. Local copies are unaffected; for a real remote transfer, ask the user."
+    },
+    {
       "id": "no-read-credential-files",
       "command_in": ["cat", "head", "tail", "bat", "nl", "tac", "strings", "xxd", "hexdump", "od", "base64", "grep", "egrep", "fgrep", "rg", "ag", "awk", "sed", "cut", "paste", "column", "sort", "uniq"],
       "arg_regex": "(^|[\\s/])(\\.netrc|\\.git-credentials|\\.pgpass|\\.aws/credentials|\\.gnupg/[\\w./-]+|auth\\.json)(\\s|$)",
