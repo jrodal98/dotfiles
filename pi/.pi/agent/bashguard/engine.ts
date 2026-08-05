@@ -25,6 +25,7 @@
  * must pass (and no exempter may fire) for the rule to trigger. Built-ins:
  *
  *   command:            basename of seg[0] equals this
+ *   command_in:         basename of seg[0] is in this list
  *   subcommand:         seg[1] equals this
  *   subcommand_in:      seg[1] is in this list
  *   verb_in:            token after the matched subcommand (seg[2] if
@@ -715,6 +716,7 @@ export function knownRuleKeys(): Set<string> {
 }
 
 registerMatcher("command", (v, seg) => typeof v === "string" && baseName(seg[0]) === v);
+registerMatcher("command_in", (v, seg) => asList(v).includes(baseName(seg[0])));
 registerMatcher("subcommand", (v, seg) => typeof v === "string" && seg.length >= 2 && seg[1] === v);
 registerMatcher("subcommand_in", (v, seg) => seg.length >= 2 && asList(v).includes(seg[1]));
 registerMatcher("verb_in", (v, seg, _ctx, rule) => {

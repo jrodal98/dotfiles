@@ -97,6 +97,24 @@
       "id": "no-interactive-pager-more",
       "command": "more",
       "reason": "more is an interactive pager and hangs a headless shell. Pipe to 'head -n N' or 'cat', or read the file directly."
+    },
+    {
+      "id": "no-read-dotenv",
+      "command_in": ["cat", "head", "tail", "bat", "nl", "tac", "strings", "xxd", "hexdump", "od", "base64", "grep", "egrep", "fgrep", "rg", "ag", "awk", "sed", "cut", "paste", "column", "sort", "uniq"],
+      "arg_regex": "(^|[\\s/])\\.env(?!\\.(?:example|sample|template))(\\.[A-Za-z0-9_.-]+)?(\\s|$)",
+      "reason": "Dumping .env files puts secrets into the agent context and logs. Read .env.example/.env.sample for the variable names, or ask the user for the specific value you need."
+    },
+    {
+      "id": "no-read-private-keys",
+      "command_in": ["cat", "head", "tail", "bat", "nl", "tac", "strings", "xxd", "hexdump", "od", "base64", "grep", "egrep", "fgrep", "rg", "ag", "awk", "sed", "cut", "paste", "column", "sort", "uniq"],
+      "arg_regex": "(^|[\\s/])(id_(rsa|ed25519|ecdsa|dsa)[\\w.-]*(?<!\\.pub)|[\\w.-]+\\.(pem|key|p12|pfx))(\\s|$)",
+      "reason": "Dumping private key material puts secrets into the agent context and logs. Public halves (*.pub) are fine; for anything else, ask the user."
+    },
+    {
+      "id": "no-read-credential-files",
+      "command_in": ["cat", "head", "tail", "bat", "nl", "tac", "strings", "xxd", "hexdump", "od", "base64", "grep", "egrep", "fgrep", "rg", "ag", "awk", "sed", "cut", "paste", "column", "sort", "uniq"],
+      "arg_regex": "(^|[\\s/])(\\.netrc|\\.git-credentials|\\.pgpass|\\.aws/credentials|\\.gnupg/[\\w./-]+|auth\\.json)(\\s|$)",
+      "reason": "That file holds credentials; dumping it puts secrets into the agent context and logs. Ask the user for the specific value you need."
     }
   ]
 }

@@ -72,6 +72,29 @@ t BLOCK 'while ! pgrep -f myjob; do sleep 5; done'
 t ALLOW 'while pgrep -x worker; do sleep 5; done'
 t ALLOW 'pgrep -f myjob'
 
+echo "== sensitive file reads =="
+t BLOCK 'cat .env'
+t BLOCK 'cat ./.env'
+t BLOCK 'head -5 /app/config/.env.production'
+t BLOCK 'grep API_KEY .env'
+t BLOCK 'base64 .env'
+t BLOCK "bash -c 'cat .env'"
+t ALLOW 'cat .env.example'
+t ALLOW 'cat .env.sample'
+t ALLOW 'cat .envrc'
+t ALLOW 'cat foo.envy'
+t ALLOW 'rm .env'
+t ALLOW 'ls -la .env'
+t BLOCK 'cat ~/.ssh/id_rsa'
+t BLOCK 'cat id_ed25519'
+t ALLOW 'cat ~/.ssh/id_rsa.pub'
+t BLOCK 'cat server.pem'
+t BLOCK 'awk 1 ~/.aws/credentials'
+t BLOCK 'cat ~/.netrc'
+t BLOCK 'cat ~/.pi/agent/auth.json'
+t ALLOW 'cat README.md'
+t ALLOW 'echo .env'
+
 echo "== layering: fail-safe, disable, override =="
 TMP_UNKNOWN="$(mktemp /tmp/tp-layer-unknown.XXXXXX.json)"
 TMP_DISABLE="$(mktemp /tmp/tp-layer-disable.XXXXXX.json)"
