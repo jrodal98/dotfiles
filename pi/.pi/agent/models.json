@@ -11,7 +11,7 @@
           "reasoning": true,
           "input": ["text", "image"],
           "contextWindow": 1048576,
-          "maxTokens": 65536,
+          "maxTokens": 128000,
           "cost": {
             "input": 1.25,
             "output": 4.25,
@@ -28,7 +28,7 @@
           "reasoning": true,
           "input": ["text", "image"],
           "contextWindow": 1048576,
-          "maxTokens": 65536,
+          "maxTokens": 128000,
           "cost": {
             "input": 1.25,
             "output": 4.25,
@@ -45,7 +45,7 @@
           "reasoning": true,
           "input": ["text", "image"],
           "contextWindow": 1048576,
-          "maxTokens": 65536,
+          "maxTokens": 128000,
           "cost": {
             "input": 0.1,
             "output": 0.2,
