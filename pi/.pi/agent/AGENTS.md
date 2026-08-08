@@ -42,6 +42,8 @@ Work is not done until verified. The default state after any change is "unverifi
 
 Specialized agents (`Agent` tool) exist for independent workstreams, isolated context, and sizeable noisy research. Work directly for simple tasks, sequential operations, single-file edits, and work that needs shared context across steps. When independent work can run asynchronously, use `run_in_background` and continue useful work while it runs.
 
+When any phase of work decomposes into independent, long-running units — per-target tests or checks, research threads, builds for separate artifacts — fan them out as background subagents by default and keep the main thread for the genuinely sequential steps. Serialize only what actually shares state (a host-global install, a shared daemon, cross-contaminating env inspection), and do not let one sequential phase make the whole workflow sequential.
+
 For long or multi-session work, checkpoint the objective, completed work, test state, blockers, and exact next step in a durable plan before compaction or handoff.
 
 Notes beyond the Agent tool's own agent descriptions:
