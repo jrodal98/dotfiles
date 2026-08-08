@@ -1,9 +1,11 @@
 {
   "defaultProvider": "llm-jrodal",
-  "defaultModel": "meta/muse-spark-1.2-contributor",
+  "defaultModel": "meta/muse-spark-1.1",
   "packages": [
     "npm:@tintinweb/pi-subagents",
     "npm:@tintinweb/pi-tasks",
     "npm:pi-btw"
-  ]
+  ],
+  "lastChangelogVersion": "0.84.1",
+  "theme": "tokyonight-moon"
 }
