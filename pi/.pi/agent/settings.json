@@ -6,6 +6,7 @@
     "npm:@tintinweb/pi-tasks",
     "npm:pi-btw"
   ],
-  "lastChangelogVersion": "0.84.1",
-  "theme": "tokyonight-moon"
+  "lastChangelogVersion": "0.84.2",
+  "theme": "tokyonight-moon",
+  "defaultThinkingLevel": "minimal"
 }

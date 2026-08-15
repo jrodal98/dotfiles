@@ -1,6 +1,26 @@
 # zmodload zsh/zprof # uncomment top and bottom of file to profile startup
-export PATH="$HOME/go/bin:$HOME/.gem/ruby/2.7.0/bin:$HOME/.local/bin/:$HOME/bin:$HOME/shared_bin:$HOME/.cargo/bin:/opt/nvim-linux-x86_64/bin:$PATH"
-export PATH="$HOME/.local/share/pi-node/node-v22.23.2-linux-x64/bin:$PATH"
+# Prepend directories to PATH (highest priority first). Uses a loop so
+# ordering is explicit and adding a new entry is one line. shared_bin must
+# stay before pi-node so the pi wrapper takes precedence.
+typeset -a _path_prepends=(
+  "$HOME/shared_bin"
+  "$HOME/.local/share/pi-node/node-v22.23.2-linux-x64/bin"
+  "$HOME/go/bin"
+  "$HOME/.gem/ruby/2.7.0/bin"
+  "$HOME/.local/bin"
+  "$HOME/bin"
+  "$HOME/.cargo/bin"
+  "/opt/nvim-linux-x86_64/bin"
+)
+for (( i=${#_path_prepends} ; i>=1 ; i-- )); do
+  [[ -d "${_path_prepends[i]}" ]] || continue
+  case ":$PATH:" in
+    *":${_path_prepends[i]}:"*) ;;
+    *) PATH="${_path_prepends[i]}:$PATH" ;;
+  esac
+done
+unset _path_prepends i
+export PATH
 
 
 if ! command -v dotgk &> /dev/null; then
@@ -114,3 +134,4 @@ SAVEHIST=10000           # Commands saved to disk
 setopt HIST_IGNORE_DUPS  # Don't save duplicate commands
 setopt HIST_IGNORE_SPACE # Don't save commands starting with space
 setopt HIST_EXPIRE_DUPS_FIRST # Expire duplicates first when trimming
+

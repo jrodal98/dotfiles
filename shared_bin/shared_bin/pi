@@ -10,4 +10,26 @@ export PI_OPUS_FAST_MODE=1
 # meta-launcher-extensions replay applies llm-rules to them too.
 export META_PI_LLM_RULES=1
 
-exec /usr/local/bin/pi "$@"
+# Dynamically find the non-wrapper pi on PATH (portable across systems).
+# type -a lists all matches; we pick the first one that isn't this wrapper.
+self="$(realpath "${BASH_SOURCE[0]}" 2>/dev/null || realpath "$0" 2>/dev/null || echo "$0")"
+real_pi=""
+while IFS= read -r p; do
+  # type -a -p outputs bare paths; fall back to parsing "pi is /path" if needed
+  [[ "$p" == *" is "* ]] && p="${p##* }"
+  [[ -z "$p" || "$p" == "$self" || "$p" == "$0" ]] && continue
+  # also compare realpaths to handle symlinks
+  rp="$(realpath "$p" 2>/dev/null || echo "$p")"
+  [[ "$rp" == "$self" ]] && continue
+  if [[ -x "$p" ]]; then
+    real_pi="$p"
+    break
+  fi
+done < <(type -a pi 2>/dev/null)
+
+if [[ -z "$real_pi" ]]; then
+  echo "pi wrapper: no non-wrapper pi found on PATH" >&2
+  exit 127
+fi
+
+exec "$real_pi" "$@"
