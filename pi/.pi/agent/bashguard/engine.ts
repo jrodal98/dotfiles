@@ -142,6 +142,74 @@ const MAX_SEGMENTS = 400;
 const DEFAULT_AUDIT_LOG = "/tmp/bashguard-audit.log";
 const STALL_LOG = "/tmp/bashguard-stalls.log";
 
+// --- tainted-var tracking for sensitive file indirection ---
+// The "for f in arr/.env; do cat \"$f\"; done" bypass worked because the
+// reader segment "cat \"$f\"" contains no literal ".env". We track vars
+// whose assigned value contained a sensitive literal and flag readers that
+// dereference them. Whole-script fallback also catches cases where the
+// assignment was missed by segment splitting.
+const DOTENV_READERS = new Set([
+  "cat", "head", "tail", "bat", "nl", "tac", "strings", "xxd", "hexdump", "od", "base64",
+  "grep", "egrep", "fgrep", "rg", "ag", "awk", "sed", "cut", "paste", "column", "sort", "uniq",
+]);
+// Anything that can consume or exfiltrate a file path without being in the
+// narrow DOTENV_READERS list. If a tainted var flows here we still want to
+// block — "cp $f /tmp/x" is as bad as "cat $f".
+const SENSITIVE_CONSUMERS = new Set([
+  ...DOTENV_READERS,
+  "less", "more", "cp", "mv", "install", "dd", "tar", "zip", "unzip", "scp", "sftp", "rsync",
+  "curl", "wget", "nc", "ncat", "netcat", "socat", "python", "python2", "python3", "node", "php", "ruby", "perl",
+  "source", ".", "env", "printenv", "set", "export",
+]);
+// Harmless commands that merely mention a path — don't block the fallback for these.
+const HARMLESS_WITH_TAINTED_VAR = new Set(["echo", "printf", "ls", "test", "[", "true", "false"]);
+// Same shape as the no-read-dotenv rule, but anchored to fire inside an
+// arbitrary value string (pad with spaces so (^|[\\s/]) still applies).
+const DOTENV_IN_VALUE_RE = /(^|[\s\/])\.env(?!\.(?:example|sample|template))(?:\.[A-Za-z0-9_.-]+)?(?:\s|$)/;
+function containsDotenvLiteral(s: string): boolean {
+  return DOTENV_IN_VALUE_RE.test(` ${s} `) || DOTENV_IN_VALUE_RE.test(` ${s}/ `);
+}
+// General sensitive substrings for taint (mirrors fileguard block list). Overblocking
+// here is preferable to leaking secrets via indirection.
+const SENSITIVE_SUBSTR_RE = /(?:\.env(?!\.(?:example|sample|template))|id_(?:rsa|ed25519|ecdsa|dsa)[\w.-]*|\.pem\b|\.key\b|\.p12\b|\.pfx\b|\.netrc\b|\.git-credentials\b|\.pgpass\b|\.aws\/credentials|\.gnupg\/|\.pi\/agent\/auth\.json)/;
+function containsSensitiveLiteral(s: string): boolean {
+  if (containsDotenvLiteral(s)) return true;
+  return SENSITIVE_SUBSTR_RE.test(s);
+}
+function isDotenvReader(seg: string[]): boolean {
+  if (seg.length === 0) return false;
+  return DOTENV_READERS.has(baseName(seg[0]));
+}
+const VAR_REF_RE = /\$\{?([A-Za-z_][A-Za-z0-9_]*)\}?/g;
+function isSensitiveConsumer(seg: string[]): boolean {
+  if (seg.length === 0) return false;
+  return SENSITIVE_CONSUMERS.has(baseName(seg[0]));
+}
+function segReferencesVar(seg: string[], varName: string): boolean {
+  for (let i = 1; i < seg.length; i++) {
+    VAR_REF_RE.lastIndex = 0;
+    let m: RegExpExecArray | null;
+    while ((m = VAR_REF_RE.exec(seg[i])) !== null) if (m[1] === varName) return true;
+  }
+  return false;
+}
+function taintedVarRefsInSeg(seg: string[], tainted: Set<string>): string[] {
+  const hits: string[] = [];
+  for (let i = 1; i < seg.length; i++) {
+    const tok = seg[i];
+    if (!tok.includes("$")) continue;
+    // Tokenizer stripped quotes, so '$f' inside single quotes looks like a ref
+    // — we tolerate the false positive (over-block is safe).
+    let m: RegExpExecArray | null;
+    VAR_REF_RE.lastIndex = 0;
+    while ((m = VAR_REF_RE.exec(tok)) !== null) {
+      const name = m[1];
+      if (tainted.has(name) && !hits.includes(name)) hits.push(name);
+    }
+  }
+  return hits;
+}
+
 // ---------------------------------------------------------------------------
 // Tokenizer
 // ---------------------------------------------------------------------------
@@ -956,6 +1024,26 @@ export function evaluateCommand(command: string, opts: EvaluateOptions): Verdict
   const deadline = Date.now() + BUDGET_MS;
   const skippedIds = new Set<string>();
   let segmentsSeen = 0;
+  // Tainted vars whose value is known to contain a sensitive literal (e.g.
+  // ".env"). Shared across recursive evalScript calls so `bash -c 'cat $f'`
+  // still sees outer taint. Populated both incrementally per-segment and via
+  // whole-script pre-scan as fallback.
+  const taintedVars = new Set<string>();
+  const scriptContainsSensitive = containsSensitiveLiteral(command);
+  // Pre-scan for obvious `for VAR in ... .env ...` and `VAR=... .env ...` patterns
+  // so the taint is present before the first reader segment is evaluated.
+  {
+    const forInRe = /\bfor\s+([A-Za-z_][A-Za-z0-9_]*)\s+in\b([^;\n]*)/g;
+    let m: RegExpExecArray | null;
+    while ((m = forInRe.exec(command)) !== null) {
+      if (containsSensitiveLiteral(m[2])) taintedVars.add(m[1]);
+    }
+    const assignRe = /(?:^|[\s;\n])(?:export\s+|declare\s+|local\s+)?([A-Za-z_][A-Za-z0-9_]*)\s*=\s*([^\s;\n"']+|"[^"]*"|'[^']*')/g;
+    while ((m = assignRe.exec(command)) !== null) {
+      const val = m[2].replace(/^['"]|['"]$/g, "");
+      if (containsSensitiveLiteral(val) || containsSensitiveLiteral(m[2])) taintedVars.add(m[1]);
+    }
+  }
 
   const evalScript = (script: string, cwd: string, depth: number): boolean => {
     if (depth > MAX_DEPTH) {
@@ -971,10 +1059,121 @@ export function evaluateCommand(command: string, opts: EvaluateOptions): Verdict
         noteStall(`budget exceeded evaluating: ${script.slice(0, 200)}`);
         return false;
       }
+      // Incrementally taint vars defined in this segment before evaluating
+      // rules on it, so `f=.env; cat $f` in the same script is caught even
+      // when both are in one evalScript invocation. Also propagates through
+      // `b=$a` where $a is already tainted (transitive taint).
+      {
+        const rawJoined = seg.join(" ");
+        const hasTaintedRef = (s: string): boolean => {
+          VAR_REF_RE.lastIndex = 0;
+          let m: RegExpExecArray | null;
+          while ((m = VAR_REF_RE.exec(s)) !== null) if (taintedVars.has(m[1])) return true;
+          return false;
+        };
+        // for VAR in <list>  — if list contains sensitive literal OR a tainted var, taint VAR
+        if (seg.length >= 4 && seg[0] === "for" && seg[2] === "in") {
+          const varName = seg[1];
+          if (/^[A-Za-z_][A-Za-z0-9_]*$/.test(varName)) {
+            const listPart = seg.slice(3).join(" ");
+            if (containsSensitiveLiteral(listPart) || containsSensitiveLiteral(rawJoined) || hasTaintedRef(listPart)) {
+              taintedVars.add(varName);
+            }
+          }
+        }
+        // Also handle `for f in "$tainted"; do ...` where tokenizer split differently: last seg before ; may be `for f in $a`
+        if (seg[0] === "for" && seg.length === 4 && seg[2] === "in" && hasTaintedRef(seg[3])) {
+          taintedVars.add(seg[1]);
+        }
+        // VAR=val / export VAR=val  (value part may be seg[0] itself)
+        for (const tok of seg) {
+          const eq = tok.indexOf("=");
+          if (eq > 0) {
+            const name = tok.slice(0, eq);
+            const rawVal = tok.slice(eq + 1);
+            const val = rawVal.replace(/^['"]|['"]$/g, "");
+            const cleanName = name.includes(":") ? name.split(":")[0] : name;
+            if (/^[A-Za-z_][A-Za-z0-9_]*$/.test(cleanName) && (containsSensitiveLiteral(val + " " + rawVal) || hasTaintedRef(rawVal) || hasTaintedRef(val))) {
+              taintedVars.add(cleanName);
+            }
+          }
+        }
+        // export VAR=val split across tokens: "export", "VAR=val"
+        if (seg[0] === "export" || seg[0] === "declare" || seg[0] === "local") {
+          for (let i = 1; i < seg.length; i++) {
+            const tok = seg[i];
+            const eq = tok.indexOf("=");
+            if (eq > 0 && (containsSensitiveLiteral(tok.slice(eq + 1)) || hasTaintedRef(tok.slice(eq + 1)))) {
+              taintedVars.add(tok.slice(0, eq));
+            }
+          }
+        }
+      }
+
       const stripped = stripModifiers(seg);
       if (stripped.length === 0) {
         effCwd = updateCwdFromCd(seg, effCwd);
         continue;
+      }
+      // Synthetic block: consumer dereferences a tainted var. Run BEFORE normal
+      // rules so the reason is specific to the indirection.
+      {
+        const isConsumer = isSensitiveConsumer(stripped);
+        const refs = taintedVarRefsInSeg(stripped, taintedVars);
+        if (isConsumer && refs.length > 0) {
+          const fire: Fire = {
+            ruleId: "no-read-dotenv-via-var",
+            severity: mode === "warn" ? "warn" : "block",
+            reason: `Dumping sensitive file via tainted variable $${refs[0]} — that variable was assigned a value containing a sensitive path (.env / private key / credential file) earlier in the same command (or transitively via another tainted var). The guard can't verify what ${"$" + refs[0]} expands to at runtime, so this is treated like reading the sensitive file directly. Use .env.example for variable names or ask the user for the specific value.`,
+            seg: stripped,
+          };
+          verdict.fires.push(fire);
+          if (doAudit) audit(fire, mode, opts.session);
+          if (fire.severity === "block") {
+            verdict.blocked = fire;
+            verdict.decision = "block";
+            return true;
+          }
+        } else if (isConsumer && scriptContainsSensitive && stripped.slice(1).some((t) => t.includes("$"))) {
+          // Fallback: whole command contained a sensitive literal somewhere and
+          // this consumer takes a variable — we can't prove the var is tainted
+          // but the combination is high-risk (covers missed for/assign parses).
+          const fire: Fire = {
+            ruleId: "no-read-dotenv-via-var",
+            severity: mode === "warn" ? "warn" : "block",
+            reason: `Consumer ${"\"" + stripped.join(" ") + "\""} takes a variable while this command contains a sensitive path (.env / private key / credential file) elsewhere — treated as indirection to avoid leaking secrets via $ expansion. Use .env.example or ask the user.`,
+            seg: stripped,
+          };
+          verdict.fires.push(fire);
+          if (doAudit) audit(fire, mode, opts.session);
+          if (fire.severity === "block") {
+            verdict.blocked = fire;
+            verdict.decision = "block";
+            return true;
+          }
+        } else if (!isConsumer && refs.length > 0 && scriptContainsSensitive) {
+          // Generic fallback: ANY non-harmless command taking a tainted var
+          // when sensitive literal was present elsewhere. Covers `cp $f /tmp/x`
+          // etc. that aren't in the consumer set. Harmless mentioners (echo/ls)
+          // are exempt to keep the guard usable.
+          if (HARMLESS_WITH_TAINTED_VAR.has(baseName(stripped[0]))) {
+            // exempt: echo/ls of the path leaks the name, not the contents
+          } else {
+            const fire: Fire = {
+              ruleId: "no-sensitive-via-var",
+              severity: mode === "warn" ? "warn" : "block",
+              reason: `Command ${"\"" + stripped.join(" ") + "\""} takes tainted variable $${refs[0]} while this command contains a sensitive path elsewhere — indirection could leak secrets via $ expansion. If this is safe (e.g. ls/echo of the path, not its contents), rewrite to avoid passing the tainted value to this command or ask the user.`,
+              seg: stripped,
+            };
+            verdict.fires.push(fire);
+            if (doAudit) audit(fire, mode, opts.session);
+            if (fire.severity === "block") {
+              verdict.blocked = fire;
+              verdict.decision = "block";
+              return true;
+            }
+          }
+        }
       }
       ctx.cwd = effCwd;
       for (const rule of config.rules) {
