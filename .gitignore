@@ -14,3 +14,4 @@ pi/.pi/agent/sessions/
 # derived deps - reproducible from settings.json packages list
 pi/.pi/agent/npm/node_modules/
 pi/.pi/agent/npm/package-lock.json
+pi/.pi/agent/git/

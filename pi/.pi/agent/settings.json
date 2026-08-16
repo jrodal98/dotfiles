@@ -4,9 +4,10 @@
   "packages": [
     "npm:@tintinweb/pi-subagents",
     "npm:@tintinweb/pi-tasks",
-    "npm:pi-btw"
+    "npm:pi-btw",
+    "git:github.com/jrodal98/pi-redact-all.git"
   ],
   "lastChangelogVersion": "0.84.2",
   "theme": "tokyonight-moon",
-  "defaultThinkingLevel": "minimal"
+  "defaultThinkingLevel": "medium"
 }
