@@ -124,6 +124,40 @@ source ~/.jrodal_zsh_utils/wezterm/init.sh
 
 alias ls='ls --color=auto'
 
+
+# halp — Ctrl+G to replace command line text with an LLM-suggested shell command
+__halp_replace() {
+    local query="$BUFFER"
+    if [[ -z "$query" ]]; then
+        return
+    fi
+    # Show thinking indicator
+    zle -R "# thinking..."
+    # Query ttymate for a shell command
+    local result
+    result=$(ttymate shell --no-stream "$query" 2>/dev/null)
+    if [[ $? -ne 0 || -z "$result" ]]; then
+        # On error, restore original text and redisplay
+        zle redisplay
+        return
+    fi
+    # Replace command line with the result
+    BUFFER="$result"
+    CURSOR=${#BUFFER}
+    zle redisplay
+}
+zle -N __halp_replace
+bindkey '^G' __halp_replace
+
+shelp ()
+{
+  (
+  ttymate --no-stream 2>/dev/null shell "$1" &
+  ttymate --no-stream 2>/dev/null shell "$1" &
+  ttymate --no-stream 2>/dev/null shell "$1" &
+) | tv | awk 'BEGIN { print "-----------------------" > "/dev/stderr" } { print $0; print $0 > "/dev/stderr" } END { print "-----------------------" > "/dev/stderr" }' | sh
+}
+
 touch "${HOME}/.env" && source "${HOME}/.env"
 # zprof # uncomment top and bottom of file to profile startup
 
