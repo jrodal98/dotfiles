@@ -85,6 +85,7 @@ zinit light jeffreytse/zsh-vi-mode
 # override the '^y' set by zsh-vi-mode
 function zvm_after_init() {
   zvm_bindkey viins '^y' autosuggest-accept
+  zvm_bindkey viins '^G' __halp_replace
 }
 
 zinit ice wait lucid
@@ -147,7 +148,6 @@ __halp_replace() {
     zle redisplay
 }
 zle -N __halp_replace
-bindkey '^G' __halp_replace
 
 shelp ()
 {
