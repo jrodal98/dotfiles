@@ -26,6 +26,7 @@ import {
 import { Container, Markdown, Spacer, Text } from "@earendil-works/pi-tui";
 import { Type } from "typebox";
 import {
+	CHEAP_MODEL,
 	defaultReviewModels,
 	loadConfig,
 	modelWithThinking,
@@ -349,9 +350,9 @@ export default function codeReviewExtension(pi: ExtensionAPI) {
 
 	pi.registerCommand("review", {
 		description:
-			"Multi-model code review: uncommitted (default), this (session changes), stack, commit, paths, or a git commit/range. Flags: --auto (accept all defaults), --fix (send findings straight to the main agent), --quick/--normal/--thorough (speed)",
+			"Multi-model code review: uncommitted (default), this (session changes), stack, commit, paths, or a git commit/range. Flags: --auto (accept all defaults), --fix (send findings straight to the main agent), --cheap (single cheap model: muse-spark-1.2), --quick/--normal/--thorough (speed)",
 		getArgumentCompletions: (prefix: string) => {
-			const options = ["uncommitted", "this", "stack", "commit", "--auto", "--fix", "--quick", "--normal", "--thorough"];
+			const options = ["uncommitted", "this", "stack", "commit", "--auto", "--fix", "--cheap", "--quick", "--normal", "--thorough"];
 			const parts = prefix.split(/\s+/);
 			const last = parts[parts.length - 1] ?? "";
 			const before = parts.slice(0, -1).join(" ");
@@ -368,12 +369,13 @@ export default function codeReviewExtension(pi: ExtensionAPI) {
 			const cfg = loadConfig();
 
 			// Parse flags: --auto (accept defaults), --fix (auto-send findings),
-			// --quick/--normal/--thorough (speed override). Rest is the target.
+			// --cheap (single cheap model), --quick/--normal/--thorough (speed override). Rest is the target.
 			const tokens = (args ?? "").split(/\s+/).filter(Boolean);
 			const flags = new Set(tokens.filter((t) => t.startsWith("--")));
 			const targetArg = tokens.filter((t) => !t.startsWith("--")).join(" ");
 			const auto = flags.has("--auto");
 			const autoFix = flags.has("--fix");
+			const cheap = flags.has("--cheap");
 			const speedOverride: ReviewSpeed | undefined = flags.has("--quick")
 				? "quick"
 				: flags.has("--thorough")
@@ -432,10 +434,12 @@ export default function codeReviewExtension(pi: ExtensionAPI) {
 				}
 			}
 
-			// 4. Pick reviewer models (defaults with --auto)
+			// 4. Pick reviewer models (defaults with --auto, or cheap single-model)
 			const defaults = defaultReviewModels(ctx.model, cfg);
 			let models: string[];
-			if (auto) {
+			if (cheap) {
+				models = [CHEAP_MODEL];
+			} else if (auto) {
 				models = defaults;
 			} else {
 				let available: string[] = [];
@@ -506,7 +510,7 @@ export default function codeReviewExtension(pi: ExtensionAPI) {
 						focusAreas,
 						models,
 						speed,
-						aggregatorModel: currentModelString(ctx),
+						aggregatorModel: cheap ? CHEAP_MODEL : currentModelString(ctx),
 						cfg,
 						signal,
 						onProgress: (runs, phase) => {
@@ -659,12 +663,17 @@ export default function codeReviewExtension(pi: ExtensionAPI) {
 			models: Type.Optional(
 				Type.Array(Type.String(), {
 					description:
-						"Reviewer models as provider/model-id. Default: cross-family best (Claude author → best GPT reviewer, and vice versa).",
+						"Reviewer models as provider/model-id. Default: cross-family best (Claude author → best GPT reviewer, and vice versa). Ignored when cheap is true.",
 				}),
 			),
 			focusAreas: Type.Optional(
 				Type.Array(Type.String(), {
 					description: "Focus area ids (bugs, slop, security, tests, performance, error-handling, api-design, concurrency, readability) or custom names. Default: auto-suggested from the diff.",
+				}),
+			),
+			cheap: Type.Optional(
+				Type.Boolean({
+					description: "When true, run all reviewers with just meta/muse-spark-1.2-internal (cheap). Equivalent to --cheap on /review.",
 				}),
 			),
 		}),
@@ -694,7 +703,7 @@ export default function codeReviewExtension(pi: ExtensionAPI) {
 				if (focusAreas.length === 0) focusAreas = FOCUS_CATALOG.slice(0, 2);
 			}
 
-			const models = params.models?.length ? params.models : defaultReviewModels(ctx.model, cfg);
+			const models = (params as any).cheap ? [CHEAP_MODEL] : params.models?.length ? params.models : defaultReviewModels(ctx.model, cfg);
 			const speed: ReviewSpeed = params.speed ?? cfg.defaultSpeed;
 
 			const makeDetails = (
@@ -723,7 +732,7 @@ export default function codeReviewExtension(pi: ExtensionAPI) {
 				focusAreas,
 				models,
 				speed,
-				aggregatorModel: currentModelString(ctx),
+				aggregatorModel: (params as any).cheap ? CHEAP_MODEL : currentModelString(ctx),
 				cfg,
 				signal,
 				onProgress: (runs, phase) => {
