@@ -90,8 +90,8 @@ def build_parser(
     parser.add_argument(
         "--stream",
         action=argparse.BooleanOptionalAction,
-        default=True,
-        help="Stream output incrementally as it arrives (default: on)",
+        default=argparse.SUPPRESS,
+        help="Stream output incrementally (default: ask on, shell off)",
     )
     subparsers = parser.add_subparsers(dest="cmd", required=True)
 
@@ -195,7 +195,7 @@ def main(
 
     model = str(getattr(args, "model", effective_model) or effective_model)
     backend_name = str(getattr(args, "backend", effective_backend) or effective_backend)
-    stream = bool(getattr(args, "stream", True))
+    stream = bool(getattr(args, "stream", args.cmd == "ask"))
 
     try:
         raw_prompt = _read_prompt(args)

@@ -49,6 +49,21 @@ class FakeClient:
         return f"answer:{prompt}"
 
 
+class StreamModeClient:
+    calls: list[str] = []
+
+    def __init__(self, resolved: ResolvedBackend) -> None:
+        pass
+
+    def send(self, prompt: str) -> str:
+        type(self).calls.append("send")
+        return "echo safe"
+
+    def stream(self, prompt: str):
+        type(self).calls.append("stream")
+        yield "echo safe"
+
+
 class CliBackendInjectionTest(unittest.TestCase):
     def test_portable_default_model(self) -> None:
         parser = build_parser(
@@ -60,6 +75,54 @@ class CliBackendInjectionTest(unittest.TestCase):
         args = parser.parse_args(["ask", "hello"])
 
         self.assertEqual("gpt-5-nano", args.model)
+
+    def test_stream_defaults_and_explicit_overrides(self) -> None:
+        cases = (
+            ("ask defaults to streaming", ["ask", "hello"], "stream"),
+            ("shell defaults to buffered", ["shell", "hello"], "send"),
+            (
+                "global stream enables shell streaming",
+                ["--stream", "shell", "hello"],
+                "stream",
+            ),
+            (
+                "local stream enables shell streaming",
+                ["shell", "--stream", "hello"],
+                "stream",
+            ),
+            (
+                "global no-stream keeps shell buffered",
+                ["--no-stream", "shell", "hello"],
+                "send",
+            ),
+            (
+                "local no-stream keeps shell buffered",
+                ["shell", "--no-stream", "hello"],
+                "send",
+            ),
+            ("global no-stream buffers ask", ["--no-stream", "ask", "hello"], "send"),
+            ("local no-stream buffers ask", ["ask", "--no-stream", "hello"], "send"),
+            ("global stream streams ask", ["--stream", "ask", "hello"], "stream"),
+            ("local stream streams ask", ["ask", "--stream", "hello"], "stream"),
+        )
+
+        for label, argv, expected_call in cases:
+            with self.subTest(label):
+                backend = RecordingBackend()
+                StreamModeClient.calls = []
+                with (
+                    patch.dict(os.environ, {}, clear=True),
+                    patch("ttymate_core.main.Client", StreamModeClient),
+                    patch("sys.stdout", io.StringIO()),
+                ):
+                    exit_code = main(
+                        argv,
+                        extra_backends={backend.name: backend},
+                        default_backend=backend.name,
+                    )
+
+                self.assertEqual(0, exit_code)
+                self.assertEqual([expected_call], StreamModeClient.calls)
 
     def test_injected_backend_and_defaults_are_used(self) -> None:
         backend = RecordingBackend()
