@@ -26,6 +26,9 @@
           "id": "meta/muse-spark-1.2",
           "name": "Muse Spark 1.2",
           "reasoning": true,
+          "samplingParams": {
+              "allowed_openai_params": ["tools", "reasoning_effort"]
+          },
           "input": ["text", "image"],
           "contextWindow": 1048576,
           "maxTokens": 128000,
@@ -43,6 +46,9 @@
           "id": "meta/muse-spark-1.2-contributor",
           "name": "Muse Spark 1.2 Contributor",
           "reasoning": true,
+          "samplingParams": {
+              "allowed_openai_params": ["tools", "reasoning_effort"]
+          },
           "input": ["text", "image"],
           "contextWindow": 1048576,
           "maxTokens": 128000,

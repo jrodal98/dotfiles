@@ -3,3 +3,15 @@ bin/bin/pandoc
 bin/bin/copyright.pandoc
 dotgk/.config/dotgk/caches
 .claude/settings.local.json
+
+# secrets - must ignore
+pi/.pi/agent/auth.json
+pi/.pi/agent/models-store.json
+
+# private history
+pi/.pi/agent/sessions/
+
+# derived deps - reproducible from settings.json packages list
+pi/.pi/agent/npm/node_modules/
+pi/.pi/agent/npm/package-lock.json
+pi/.pi/agent/git/
