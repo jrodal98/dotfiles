@@ -141,6 +141,11 @@
       "command_in": ["cat", "head", "tail", "bat", "nl", "tac", "strings", "xxd", "hexdump", "od", "base64", "grep", "egrep", "fgrep", "rg", "ag", "awk", "sed", "cut", "paste", "column", "sort", "uniq"],
       "arg_regex": "(^|[\\s/])(\\.netrc|\\.git-credentials|\\.pgpass|\\.aws/credentials|\\.gnupg/[\\w./-]+|auth\\.json)(\\s|$)",
       "reason": "That file holds credentials; dumping it puts secrets into the agent context and logs. Ask the user for the specific value you need."
+    },
+    {
+      "id": "no-read-gitignored",
+      "gitignored": ["cat", "head", "tail", "bat", "less", "more", "nl", "tac", "strings", "xxd", "hexdump", "od", "base64", "grep", "egrep", "fgrep", "rg", "ag", "awk", "sed", "cut", "paste", "column", "sort", "uniq", "cp", "mv", "jq", "yq"],
+      "reason": "That file is gitignored. Gitignored files often hold secrets, build artifacts, or large generated content. Ask the user to confirm that the file isn't sensitive and to allowlist the path."
     }
   ]
 }
