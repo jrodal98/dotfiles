@@ -31,27 +31,6 @@ wezterm.on("augment-command-palette", function(window, pane)
    }
 end)
 
--- Highlight the active tab, and flag background tabs that produced output
--- since they were last visible.
-local TAB_ACTIVE_BG = "#3700b3"
-local TAB_UNSEEN_BG = "#014443"
-
-wezterm.on("format-tab-title", function(tab, _, _, _, _, _)
-   local title = string.format(" %-11s", tab.active_pane.title)
-
-   if tab.is_active then
-      return { { Background = { Color = TAB_ACTIVE_BG } }, { Text = title } }
-   end
-
-   for _, pane in ipairs(tab.panes) do
-      if pane.has_unseen_output then
-         return { { Background = { Color = TAB_UNSEEN_BG } }, { Text = title } }
-      end
-   end
-
-   return title
-end)
-
 -- https://wezterm.org/config/lua/pane/get_user_vars.html
 wezterm.on("user-var-changed", function(window, pane, name, value)
    wezterm.log_info("var", name, value)
