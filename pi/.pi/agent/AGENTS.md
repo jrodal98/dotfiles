@@ -34,6 +34,12 @@ Work is not done until verified. The default state after any change is "unverifi
 - Report the passing check and anything still open, not the attempt history. Failures you caught and fixed en route are part of the work, not the report.
 - Implement the requirements generally rather than hard-coding test cases or using workarounds solely to make tests pass. Fix the actual logic rather than disabling tests or suppressing diagnostics merely to make a check pass.
 
+## Long-running processes
+
+- Do not poll with long sleeps (`sleep 300; check_status`) — the full interval is wasted even when the work finishes early. Keep the command attached with a timeout when possible; otherwise block on the completion event: `timeout <N> tail --pid=<pid> -f /dev/null` for a process, `inotifywait -t <N>` for a file, `wait <pid>` within the same shell.
+- When backgrounding a process with `&`, print its PID in the same call (`echo "pid=$!"`) so later calls can wait on or inspect it. Recover a lost PID with `pgrep -f` on a bracket-escaped pattern (`pgrep -f 'my_jo[b]'`) so the pattern cannot match its own command line.
+- If a poll loop is unavoidable, bound its iterations, keep sleeps at 30 seconds or less, and check liveness by output growth rather than process-name matching.
+
 ## Tool discovery
 
 - Load the relevant skill and read the tool's help before guessing command names, flags, dependencies, or targets. Prefer authoritative declarations and real usage over remembered syntax.

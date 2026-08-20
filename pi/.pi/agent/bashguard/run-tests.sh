@@ -72,6 +72,24 @@ t BLOCK 'while ! pgrep -f myjob; do sleep 5; done'
 t ALLOW 'while pgrep -x worker; do sleep 5; done'
 t ALLOW 'pgrep -f myjob'
 
+echo "== long sleeps (sleep-then-check polling) =="
+t BLOCK 'sleep 300; check_status'
+t BLOCK 'sleep 300 && check_status'
+t BLOCK 'sleep 31'
+t BLOCK 'sleep 60.5'
+t BLOCK 'sleep 5m'
+t BLOCK 'sleep 1h'
+t BLOCK 'sudo sleep 120'
+t BLOCK "bash -c 'sleep 60 && foo'"
+t BLOCK 'while true; do sleep 60; check; done'
+t ALLOW 'sleep 30'
+t ALLOW 'sleep 15 && wc -l out.txt'
+t ALLOW 'sleep 0.5'
+t ALLOW 'sleep 1'
+t ALLOW 'echo "sleep 300"'
+t ALLOW 'sleep $DELAY'
+t ALLOW 'while pgrep -x worker; do sleep 20; done'
+
 echo "== sensitive file reads =="
 t BLOCK 'cat .env'
 t BLOCK 'cat ./.env'
