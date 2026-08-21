@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 
 export PI_OPENAI_FAST_MODE=1
-export PI_OPUS_FAST_MODE=1
+# I don't want this on by default, not worth the $$$
+export PI_OPUS_FAST_MODE=0
 
 # Force-enable the llm-rules extension (Devmate Rules/Skills preamble). The
 # launcher only sets this when the cpe_3p_ai_pi_llm_rules GK passes, and it
