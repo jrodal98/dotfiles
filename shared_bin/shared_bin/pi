@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 
-export PI_OPENAI_FAST_MODE=1
+# I don't want this on by default, not worth the $$$
+export PI_OPENAI_FAST_MODE=0
 # I don't want this on by default, not worth the $$$
 export PI_OPUS_FAST_MODE=0
 
