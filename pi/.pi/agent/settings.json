@@ -5,6 +5,7 @@
     "npm:@tintinweb/pi-subagents",
     "npm:@tintinweb/pi-tasks",
     "npm:pi-btw",
+    "npm:@juicesharp/rpiv-ask-user-question",
     "git:github.com/jrodal98/pi-redact-all.git"
   ],
   "lastChangelogVersion": "0.84.2",

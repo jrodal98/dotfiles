@@ -10,7 +10,7 @@ Initial request: $ARGUMENTS
 
 ## Core Principles
 
-- **Ask clarifying questions via ask_user**: Identify ambiguities, edge cases, and underspecified behaviors. Ask specific, concrete questions instead of assuming. Ask early — after understanding the codebase, before designing.
+- **Ask clarifying questions via ask_user_question**: Identify ambiguities, edge cases, and underspecified behaviors. Ask specific, concrete questions instead of assuming. Ask early — after understanding the codebase, before designing.
 - **Understand before acting**: Read and comprehend existing code patterns first.
 - **Read files identified by agents**: When agents return lists of key files, read them yourself to build detailed context before proceeding.
 - **Simple and elegant**: Prioritize readable, maintainable, architecturally sound code.
@@ -23,7 +23,7 @@ Initial request: $ARGUMENTS
 **Goal**: Understand what needs to be built.
 
 1. Create tasks for all phases (TaskCreate).
-2. If the feature request is missing or unclear, use ask_user to learn: what problem they're solving, what the feature should do, and any constraints or requirements.
+2. If the feature request is missing or unclear, use ask_user_question to learn: what problem they're solving, what the feature should do, and any constraints or requirements.
 3. Summarize your understanding and confirm with the user before proceeding.
 
 ---
@@ -54,7 +54,7 @@ Initial request: $ARGUMENTS
 
 1. Review the codebase findings against the original request.
 2. Identify underspecified aspects: edge cases, error handling, integration points, scope boundaries, design preferences, backward compatibility, performance needs.
-3. Ask everything in **one batched ask_user call** (one question per topic, with options where likely answers are known).
+3. Ask everything in **one batched ask_user_question call** (one question per topic, with options where likely answers are known).
 4. If the user says "whatever you think is best", state your recommendation and get explicit confirmation.
 
 ---
@@ -70,7 +70,7 @@ Initial request: $ARGUMENTS
    Give each agent the feature requirements, the Phase 3 answers, and the key files/patterns from Phase 2.
 2. Review all plans and form your own opinion on which fits best for this specific task (small fix vs large feature, urgency, complexity, team context).
 3. Present: a brief summary of each approach, a trade-off comparison, concrete implementation differences, and **your recommendation with reasoning**.
-4. Use ask_user to have the user pick an approach.
+4. Use ask_user_question to have the user pick an approach.
 
 ---
 
@@ -78,7 +78,7 @@ Initial request: $ARGUMENTS
 
 **Goal**: Build the feature.
 
-**DO NOT START WITHOUT EXPLICIT USER APPROVAL** (the approach choice in Phase 4 counts if the user says to proceed; otherwise confirm via ask_user).
+**DO NOT START WITHOUT EXPLICIT USER APPROVAL** (the approach choice in Phase 4 counts if the user says to proceed; otherwise confirm via ask_user_question).
 
 1. Read all relevant files identified in previous phases that you haven't read yet.
 2. Implement following the chosen architecture.
@@ -98,7 +98,7 @@ Initial request: $ARGUMENTS
    - **Project conventions/abstractions**: standards, patterns, guideline compliance
    Give each the review scope (this session's changes) and its focus.
 2. Consolidate the findings across reviewers and identify the highest-severity issues you recommend fixing.
-3. Present findings and use ask_user to decide: fix now, fix later, or proceed as-is.
+3. Present findings and use ask_user_question to decide: fix now, fix later, or proceed as-is.
 4. Address issues per the user's decision.
 
 ---

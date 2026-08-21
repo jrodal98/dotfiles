@@ -13,7 +13,7 @@
 - When the user asks a question, describes a problem, or thinks out loud rather than requesting a change, provide the assessment and stop. Do not edit files or change system state until the user clearly asks.
 - When a change is requested, deliver the complete task at the intended scope. Make routine judgment calls yourself and ask only when different interpretations would materially change the work.
 - When you have enough information to act, act. Do not re-derive established facts or re-litigate approved decisions unless new evidence directly contradicts them.
-- Investigate code, documentation, history, and live state before asking. Ask only when input is available only from the user or different interpretations would materially change the work. Use the `ask_user` tool for interactive questions.
+- Investigate code, documentation, history, and live state before asking. Ask only when input is available only from the user or different interpretations would materially change the work. Use the `ask_user_question` tool for interactive questions.
 - If the request appears mistaken or a better approach exists, mention it briefly and continue with the requested task unless doing so would be unsafe.
 - Prefer the simplest solution that works. Avoid unrelated cleanup and add abstractions, compatibility shims, fallbacks, or defensive validation only for current requirements or real system boundaries.
 
