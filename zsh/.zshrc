@@ -7,20 +7,46 @@ typeset -a _path_prepends=(
   "$HOME/.local/share/pi-node/node-v22.23.2-linux-x64/bin"
   "$HOME/go/bin"
   "$HOME/.gem/ruby/2.7.0/bin"
-  "$HOME/.local/bin"
   "$HOME/bin"
+  "$HOME/.local/bin"
   "$HOME/.cargo/bin"
   "/opt/nvim-linux-x86_64/bin"
 )
-for (( i=${#_path_prepends} ; i>=1 ; i-- )); do
-  [[ -d "${_path_prepends[i]}" ]] || continue
-  case ":$PATH:" in
-    *":${_path_prepends[i]}:"*) ;;
-    *) PATH="${_path_prepends[i]}:$PATH" ;;
-  esac
+# Filter to existing dirs and prepend with dedup (first occurrence wins)
+typeset -a _existing_prepends=()
+for p in "${_path_prepends[@]}"; do
+  [[ -d "$p" ]] || continue
+  _existing_prepends+=("${p%/}")
 done
-unset _path_prepends i
+typeset -gU path
+path=("${_existing_prepends[@]}" $path)
+unset _path_prepends _existing_prepends p
 export PATH
+
+# Helpers for any file sourced from .zshrc (e.g. meta.zshrc, dotgk cache).
+# Scalar `PATH=...:$PATH` bypasses `typeset -U` and reintroduces duplicates.
+# Use the tied array `path` instead — it dedupes automatically.
+#   path_prepend /foo/bin /bar/bin  # highest priority first
+#   path_append /foo/bin
+path_prepend() {
+  local p
+  local -a _to_prepend=()
+  for p in "$@"; do
+    [[ -d "$p" ]] || continue
+    p="${p%/}"
+    _to_prepend+=("$p")
+  done
+  (( ${#_to_prepend} )) || return 0
+  path=("${_to_prepend[@]}" $path)
+}
+path_append() {
+  local p
+  for p in "$@"; do
+    [[ -d "$p" ]] || continue
+    p="${p%/}"
+    path+=("$p")
+  done
+}
 
 if ! command -v dotgk &> /dev/null; then
   curl -fsSL https://raw.githubusercontent.com/jrodal98/dotgk/refs/heads/master/install.sh | sh
@@ -167,4 +193,16 @@ SAVEHIST=10000           # Commands saved to disk
 setopt HIST_IGNORE_DUPS  # Don't save duplicate commands
 setopt HIST_IGNORE_SPACE # Don't save commands starting with space
 setopt HIST_EXPIRE_DUPS_FIRST # Expire duplicates first when trimming
+
+# Final dedup: scalar PATH= assignments (from dotgk/meta/zinit etc.) bypass
+# typeset -U and reintroduce duplicates, so normalize and collapse once at the end.
+{
+  local -a _norm=()
+  local _p
+  for _p in $path; do
+    _norm+=("${_p%/}")
+  done
+  path=($_norm)
+  unset _norm _p
+}
 
