@@ -6,9 +6,12 @@
       "apiKey": "$LLM_JRODAL_API_KEY",
       "models": [
         {
-          "id": "meta/muse-spark-1.1",
-          "name": "Muse Spark 1.1",
+          "id": "muse-spark",
+          "name": "Muse Spark",
           "reasoning": true,
+          "samplingParams": {
+              "allowed_openai_params": ["tools", "reasoning_effort"]
+          },
           "input": ["text", "image"],
           "contextWindow": 1048576,
           "maxTokens": 128000,
@@ -23,8 +26,28 @@
           }
         },
         {
-          "id": "meta/muse-spark-1.2",
-          "name": "Muse Spark 1.2",
+          "id": "muse-spark-contributor",
+          "name": "Muse Spark Contributor",
+          "reasoning": true,
+          "samplingParams": {
+              "allowed_openai_params": ["tools", "reasoning_effort"]
+          },
+          "input": ["text", "image"],
+          "contextWindow": 1048576,
+          "maxTokens": 128000,
+          "cost": {
+            "input": 0.1,
+            "output": 0.2,
+            "cacheRead": 0.002,
+            "cacheWrite": 0
+          },
+          "compat": {
+            "supportsDeveloperRole": false
+          }
+        },
+        {
+          "id": "meta/muse-spark-1.3",
+          "name": "Muse Spark 1.3",
           "reasoning": true,
           "samplingParams": {
               "allowed_openai_params": ["tools", "reasoning_effort"]
@@ -56,6 +79,66 @@
             "input": 0.1,
             "output": 0.2,
             "cacheRead": 0.002,
+            "cacheWrite": 0
+          },
+          "compat": {
+            "supportsDeveloperRole": false
+          }
+        },
+        {
+          "id": "muse-spark-1.2",
+          "name": "Muse Spark 1.2",
+          "reasoning": true,
+          "samplingParams": {
+              "allowed_openai_params": ["tools", "reasoning_effort"]
+          },
+          "input": ["text", "image"],
+          "contextWindow": 1048576,
+          "maxTokens": 128000,
+          "cost": {
+            "input": 1.25,
+            "output": 4.25,
+            "cacheRead": 0.15,
+            "cacheWrite": 0
+          },
+          "compat": {
+            "supportsDeveloperRole": false
+          }
+        },
+        {
+          "id": "muse-spark-1.2-contributor",
+          "name": "Muse Spark 1.2 Contributor",
+          "reasoning": true,
+          "samplingParams": {
+              "allowed_openai_params": ["tools", "reasoning_effort"]
+          },
+          "input": ["text", "image"],
+          "contextWindow": 1048576,
+          "maxTokens": 128000,
+          "cost": {
+            "input": 0.1,
+            "output": 0.2,
+            "cacheRead": 0.002,
+            "cacheWrite": 0
+          },
+          "compat": {
+            "supportsDeveloperRole": false
+          }
+        },
+        {
+          "id": "muse-spark-1.1",
+          "name": "Muse Spark 1.1",
+          "reasoning": true,
+          "samplingParams": {
+              "allowed_openai_params": ["tools", "reasoning_effort"]
+          },
+          "input": ["text", "image"],
+          "contextWindow": 1048576,
+          "maxTokens": 128000,
+          "cost": {
+            "input": 1.25,
+            "output": 4.25,
+            "cacheRead": 0.15,
             "cacheWrite": 0
           },
           "compat": {
