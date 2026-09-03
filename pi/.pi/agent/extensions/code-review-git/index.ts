@@ -350,7 +350,7 @@ export default function codeReviewExtension(pi: ExtensionAPI) {
 
 	pi.registerCommand("review", {
 		description:
-			"Multi-model code review: uncommitted (default), this (session changes), stack, commit, paths, or a git commit/range. Flags: --auto (accept all defaults), --fix (send findings straight to the main agent), --cheap (single cheap model: muse-spark-1.2), --quick/--normal/--thorough (speed)",
+			"Multi-model code review: uncommitted (default), this (session changes), stack, commit, paths, or a git commit/range. Flags: --auto (accept all defaults), --fix (send findings straight to the main agent), --cheap (single cheap model: muse-spark-1.3-contributor), --quick/--normal/--thorough (speed)",
 		getArgumentCompletions: (prefix: string) => {
 			const options = ["uncommitted", "this", "stack", "commit", "--auto", "--fix", "--cheap", "--quick", "--normal", "--thorough"];
 			const parts = prefix.split(/\s+/);
@@ -673,7 +673,7 @@ export default function codeReviewExtension(pi: ExtensionAPI) {
 			),
 			cheap: Type.Optional(
 				Type.Boolean({
-					description: "When true, run all reviewers with just meta/muse-spark-1.2-internal (cheap). Equivalent to --cheap on /review.",
+					description: "When true, run all reviewers with just meta/muse-spark-1.3-contributor (cheap). Equivalent to --cheap on /review.",
 				}),
 			),
 		}),

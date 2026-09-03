@@ -40,7 +40,7 @@ export function loadConfig(): ReviewConfig {
 	}
 }
 
-export const CHEAP_MODEL = "meta/muse-spark-1.2-internal";
+export const CHEAP_MODEL = "meta/muse-spark-1.3-contributor";
 
 export const THINKING_BY_SPEED: Record<ReviewSpeed, string> = {
 	quick: "low",
