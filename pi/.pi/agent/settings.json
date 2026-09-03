@@ -1,6 +1,6 @@
 {
   "defaultProvider": "llm-jrodal",
-  "defaultModel": "meta/muse-spark-1.3-contributor",
+  "defaultModel": "muse-spark-contributor",
   "packages": [
     "npm:@tintinweb/pi-subagents",
     "npm:@tintinweb/pi-tasks",
@@ -9,7 +9,10 @@
     "npm:@syzom/nopus",
     "git:github.com/jrodal98/pi-redact-all.git"
   ],
-  "lastChangelogVersion": "0.84.2",
+  "lastChangelogVersion": "0.84.4",
   "theme": "tokyonight-moon",
-  "defaultThinkingLevel": "medium"
+  "defaultThinkingLevel": "medium",
+  "enabledModels": [
+    "llm-jrodal/muse-spark-contributor"
+  ]
 }
