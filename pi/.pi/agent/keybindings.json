@@ -1,0 +1,4 @@
+{
+  "tui.input.tab": ["tab", "ctrl+y"],
+  "tui.editor.yank": []
+}

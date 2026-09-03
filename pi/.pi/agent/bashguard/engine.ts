@@ -31,6 +31,8 @@
  *   verb_in:            token after the matched subcommand (seg[2] if
  *                       subcommand/subcommand_in present, else seg[1])
  *                       is in this list
+ *   verb_not_in:        the same token is present, is not a flag, and is
+ *                       absent from this list (default-deny allowlist)
  *   any_flag:           at least one of these tokens appears in seg
  *   any_flag_regex:     regex matched (anchored) against tokens starting "-"
  *   arg_regex:          regex searched against seg[1..] joined by spaces
@@ -789,9 +791,17 @@ registerMatcher("command", (v, seg) => typeof v === "string" && baseName(seg[0])
 registerMatcher("command_in", (v, seg) => asList(v).includes(baseName(seg[0])));
 registerMatcher("subcommand", (v, seg) => typeof v === "string" && seg.length >= 2 && seg[1] === v);
 registerMatcher("subcommand_in", (v, seg) => seg.length >= 2 && asList(v).includes(seg[1]));
+function verbPosition(rule: Rule): number {
+  return "subcommand" in rule || "subcommand_in" in rule ? 2 : 1;
+}
+
 registerMatcher("verb_in", (v, seg, _ctx, rule) => {
-  const pos = "subcommand" in rule || "subcommand_in" in rule ? 2 : 1;
+  const pos = verbPosition(rule);
   return pos < seg.length && asList(v).includes(seg[pos]);
+});
+registerMatcher("verb_not_in", (v, seg, _ctx, rule) => {
+  const pos = verbPosition(rule);
+  return pos < seg.length && !seg[pos].startsWith("-") && !asList(v).includes(seg[pos]);
 });
 registerMatcher("any_flag", (v, seg) => {
   const flags = new Set(asList(v));
@@ -1018,7 +1028,11 @@ export function evaluateCommand(command: string, opts: EvaluateOptions): Verdict
   const sources = opts.sources ?? resolveSources();
   const { config, errors } = loadRules(sources);
   const verdict: Verdict = { decision: "allow", fires: [], skippedRules: [], notes: [...errors] };
-  if (config.rules.length === 0) return verdict;
+  if (config.rules.length === 0) {
+    const sourceSummary = sources.length > 0 ? sources.join(", ") : "configured sources";
+    verdict.notes.push(`no rules loaded from ${sourceSummary}; all guards are disabled`);
+    return verdict;
+  }
 
   const ctx: EvalContext = { cwd: opts.cwd, config, cache: new Map() };
   const deadline = Date.now() + BUDGET_MS;

@@ -2,6 +2,7 @@
 
 export META_CLAUDE_CODE_RELEASE=latest
 export CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1
+export META_CLAUDE_EXPERIMENTAL_ACCESS=1
 
 # Check if --model or --no-yolo is passed as an argument
 has_model=false
