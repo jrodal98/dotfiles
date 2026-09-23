@@ -13,7 +13,7 @@ select.quick_select_patterns = {
    patterns.frecli,
    patterns.buck_target,
    patterns.windows_path,
-   patterns.devmate_trajectory,
+   patterns.pi_session,
 }
 
 select.hyperlink_rules = wezterm.default_hyperlink_rules()
@@ -26,11 +26,6 @@ table.insert(select.hyperlink_rules, {
 table.insert(select.hyperlink_rules, {
    regex = patterns.github_project,
    format = "https://www.github.com/$1/$3",
-})
-
-table.insert(select.hyperlink_rules, {
-   regex = patterns.devmate_trajectory,
-   format = "https://www.internalfb.com/intern/devai/devmate/inspector/$1_0",
 })
 
 return select

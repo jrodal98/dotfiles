@@ -14,7 +14,7 @@ patterns.frecli = "frecli cas download-action .*:\\d+"
 patterns.buck_target = "\\b([\\w]+//[\\w/]+:[\\w.-]+)\\b"
 patterns.windows_path = "\\b([a-zA-Z]:\\\\[\\w .-]+(?:\\\\[\\w .-]+)*)\\b"
 
--- jrodal_1_c99fA_HzOS_University_unit__2__APIs_unit_local
-patterns.devmate_trajectory = [[(jrodal_.+?_local)]]
+-- pi --session 01a0cf8e-54b6-7233-93d9-93af81f0edfe
+patterns.pi_session = "\\bpi --session [0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}\\b"
 
 return patterns
