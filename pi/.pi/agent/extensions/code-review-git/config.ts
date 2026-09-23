@@ -20,7 +20,7 @@ export interface ReviewConfig {
 
 const DEFAULTS: ReviewConfig = {
 	bestClaude: "anthropic/claude-fable-5",
-	bestGpt: "openai/gpt-5.6-sol",
+	bestGpt: "openai/gpt-6-astra",
 	focusSuggestModel: "anthropic/claude-haiku-4-5",
 	maxConcurrency: 16,
 	defaultSpeed: "normal",
