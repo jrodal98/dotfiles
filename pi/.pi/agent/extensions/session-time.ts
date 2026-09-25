@@ -38,6 +38,7 @@ export default function (pi: ExtensionAPI) {
 	let toolUnionMs = 0;
 	let toolWindowStart: number | null = null;
 	const toolActive = new Map<string, number>();
+	const extNames = new Map<string, string>();
 	const toolTotals = new Map<string, number>();
 	let toolSeq = 0;
 	let timer: ReturnType<typeof setInterval> | undefined;
@@ -151,6 +152,7 @@ export default function (pi: ExtensionAPI) {
 		nAfterResp = 0;
 		nMsgStart = 0;
 		nMsgEnd = 0;
+		extNames.clear();
 		toolUnionMs = 0;
 		toolWindowStart = null;
 		toolActive.clear();
@@ -241,6 +243,27 @@ export default function (pi: ExtensionAPI) {
 			if (last) closeToolWindow(last, "tool", now());
 		}
 		activeCtx = ctx;
+		refreshActive();
+	});
+
+	// Spans reported by other extensions over the inter-extension bus, for
+	// work (e.g. child-process runs from command handlers) that emits no
+	// tool lifecycle events of its own. Counted as tools, unioned as usual.
+	pi.events.on("session-time:external-start", (data) => {
+		const d = data as { id?: unknown; name?: unknown };
+		if (typeof d.id !== "string" || !d.id) return;
+		const key = `ext:${d.id}`;
+		extNames.set(key, typeof d.name === "string" && d.name ? d.name : "external");
+		openToolWindow(key, now());
+		refreshActive();
+	});
+
+	pi.events.on("session-time:external-end", (data) => {
+		const d = data as { id?: unknown };
+		if (typeof d.id !== "string" || !d.id) return;
+		const key = `ext:${d.id}`;
+		closeToolWindow(key, extNames.get(key) ?? "external", now());
+		extNames.delete(key);
 		refreshActive();
 	});
 
