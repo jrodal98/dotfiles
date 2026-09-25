@@ -23,6 +23,12 @@ function isStaleCtxError(e: unknown): boolean {
 	);
 }
 
+const SPAN_LOG_MAX = 30;
+
+function fmtClock(ms: number): string {
+	return new Date(ms).toTimeString().slice(0, 8);
+}
+
 function fmtDur(ms: number): string {
 	const s = Math.max(0, Math.round(ms / 1000));
 	if (s < 60) return `${s}s`;
@@ -49,6 +55,7 @@ export default function (pi: ExtensionAPI) {
 	const tools: Bucket = { active: new Map(), unionMs: 0, windowStart: null, totals: new Map() };
 	const subagents: Bucket = { active: new Map(), unionMs: 0, windowStart: null, totals: new Map() };
 	const extNames = new Map<string, string>();
+	const spanLog: Array<{ name: string; sub: boolean; start: number; end: number }> = [];
 	let toolSeq = 0;
 	let timer: ReturnType<typeof setInterval> | undefined;
 	let activeCtx: ExtensionContext | null = null;
@@ -85,6 +92,7 @@ export default function (pi: ExtensionAPI) {
 	// outstanding spans. Safety net for starts without ends (abort/cancel).
 	function drainBucket(b: Bucket, t = now()): void {
 		if (b.windowStart !== null) b.unionMs += Math.max(0, t - b.windowStart);
+		for (const span of b.active.values()) logSpan(b, span.name, span.start, t);
 		b.windowStart = null;
 		b.active.clear();
 	}
@@ -136,6 +144,7 @@ export default function (pi: ExtensionAPI) {
 		b.active.delete(key);
 		const dur = Math.max(0, t - span.start);
 		b.totals.set(span.name, (b.totals.get(span.name) ?? 0) + dur);
+		logSpan(b, span.name, span.start, t);
 		if (b.active.size === 0 && b.windowStart !== null) {
 			b.unionMs += Math.max(0, t - b.windowStart);
 			b.windowStart = null;
@@ -147,6 +156,11 @@ export default function (pi: ExtensionAPI) {
 	function closeByKey(key: string, name: string, t = now()): void {
 		const b = tools.active.has(key) ? tools : subagents.active.has(key) ? subagents : bucketFor(name);
 		closeWindow(b, key, t);
+	}
+
+	function logSpan(b: Bucket, name: string, start: number, end: number): void {
+		spanLog.push({ name, sub: b === subagents, start, end });
+		while (spanLog.length > SPAN_LOG_MAX) spanLog.shift();
 	}
 
 	function bucketUnionMs(b: Bucket, t: number): number {
@@ -190,6 +204,7 @@ export default function (pi: ExtensionAPI) {
 		nAfterResp = 0;
 		nMsgStart = 0;
 		nMsgEnd = 0;
+		spanLog.length = 0;
 		extNames.clear();
 		for (const b of [tools, subagents]) {
 			b.unionMs = 0;
@@ -338,6 +353,15 @@ export default function (pi: ExtensionAPI) {
 				lines.push("  by tool:");
 				for (const r of rows.sort((a, b) => b.ms - a.ms)) {
 					lines.push(`    ${r.name}: ${fmtDur(r.ms)}${r.sub ? " (subagent)" : ""}`);
+				}
+			}
+			for (const [label, b] of [["subagents", subagents], ["tools", tools]] as const) {
+				if (b.windowStart !== null) lines.push(`  OPEN ${label} window since ${fmtClock(b.windowStart)} (stuck if you are idle)`);
+			}
+			if (spanLog.length > 0) {
+				lines.push("  spans (wall-clock):");
+				for (const sp of spanLog) {
+					lines.push(`    ${sp.name} [${sp.sub ? "subagents" : "tools"}] ${fmtClock(sp.start)}–${fmtClock(sp.end)}`);
 				}
 			}
 			lines.push("execution windows + explicit external spans only; parallel spans count once per bucket; slight bucket overlap possible on dropped provider events.");
