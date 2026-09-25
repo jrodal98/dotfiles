@@ -529,7 +529,7 @@ export default function codeReviewExtension(pi: ExtensionAPI) {
 						},
 					}).finally(() => {
 						pi.events.emit("session-time:external-end", { id: spanId });
-					}),
+					});
 				},
 			);
 			ctx.ui.setWidget("code-review", undefined);
