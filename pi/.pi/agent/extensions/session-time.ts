@@ -52,6 +52,11 @@ export default function (pi: ExtensionAPI) {
 	let nAfterResp = 0;
 	let nMsgStart = 0;
 	let nMsgEnd = 0;
+	// Hook counters (diagnostic only — no windows). If tool executions run
+	// but these stay zero, the work is happening outside this runner.
+	let nToolCall = 0;
+	let nToolResult = 0;
+	let nUserBash = 0;
 	const tools: Bucket = { active: new Map(), unionMs: 0, windowStart: null, totals: new Map() };
 	const subagents: Bucket = { active: new Map(), unionMs: 0, windowStart: null, totals: new Map() };
 	const extNames = new Map<string, string>();
@@ -204,6 +209,9 @@ export default function (pi: ExtensionAPI) {
 		nAfterResp = 0;
 		nMsgStart = 0;
 		nMsgEnd = 0;
+		nToolCall = 0;
+		nToolResult = 0;
+		nUserBash = 0;
 		spanLog.length = 0;
 		extNames.clear();
 		for (const b of [tools, subagents]) {
@@ -278,10 +286,22 @@ export default function (pi: ExtensionAPI) {
 		refreshActive();
 	});
 
-	// NOTE: tool_call/tool_result are deliberately not tracked. Execution
-	// windows above are the canonical span source and explicit external spans
-	// come over the bus; the old speculative call-hook path double-counted
-	// and misattributed parallel calls.
+	// NOTE: tool_call/tool_result/user_bash are counted for diagnostics but
+	// deliberately not timed. Execution windows above are the canonical span
+	// source and explicit external spans come over the bus; the old
+	// speculative call-hook timing path double-counted and misattributed
+	// parallel calls.
+	pi.on("tool_call", () => {
+		nToolCall += 1;
+	});
+
+	pi.on("tool_result", () => {
+		nToolResult += 1;
+	});
+
+	pi.on("user_bash", () => {
+		nUserBash += 1;
+	});
 
 	// Spans reported by other extensions over the inter-extension bus, for
 	// work (e.g. child-process runs from command handlers) that emits no
@@ -366,8 +386,9 @@ export default function (pi: ExtensionAPI) {
 			}
 			lines.push("execution windows + explicit external spans only; parallel spans count once per bucket; slight bucket overlap possible on dropped provider events.");
 			lines.push(
-				`events: provider ${nBeforeReq}/${nAfterResp} req/resp, assistant msgs ${nMsgStart}/${nMsgEnd} start/end` +
+				`events: provider ${nBeforeReq}/${nAfterResp} req/resp, assistant msgs ${nMsgStart}/${nMsgEnd} start/end, tool_call ${nToolCall}, tool_result ${nToolResult}, user_bash ${nUserBash}` +
 					(llmWindowStart !== null ? " (llm window OPEN now)" : ""),
+				`pid ${process.pid}, session started ${fmtClock(sessionStart)}`,
 			);
 			ctx.ui.notify(lines.join("\n"), "info");
 		},
