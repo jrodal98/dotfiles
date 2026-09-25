@@ -8,7 +8,7 @@ const TICK_MS = 5_000;
 const SUBAGENT_TOOLS = new Set(["agent", "subagent", "review"]);
 
 interface Bucket {
-	active: Map<string, number>;
+	active: Map<string, { start: number; name: string }>;
 	unionMs: number;
 	windowStart: number | null;
 	totals: Map<string, number>;
@@ -81,6 +81,14 @@ export default function (pi: ExtensionAPI) {
 		llmWindowStart = null;
 	}
 
+	// Flush an execution bucket: count the open union up to now and drop
+	// outstanding spans. Safety net for starts without ends (abort/cancel).
+	function drainBucket(b: Bucket, t = now()): void {
+		if (b.windowStart !== null) b.unionMs += Math.max(0, t - b.windowStart);
+		b.windowStart = null;
+		b.active.clear();
+	}
+
 	function isAssistantMessage(event: Record<string, unknown>): boolean {
 		const msg = event["message"] as Record<string, unknown> | undefined;
 		return !!msg && msg["role"] === "assistant";
@@ -108,25 +116,26 @@ export default function (pi: ExtensionAPI) {
 		return isSubagent(name) ? subagents : tools;
 	}
 
-	function openWindow(b: Bucket, key: string, t = now()): void {
+	function openWindow(b: Bucket, key: string, name: string, t = now()): void {
 		if (b.active.size === 0) b.windowStart = t;
-		b.active.set(key, t);
+		// Keep the first start on duplicates (e.g. retried start events).
+		if (!b.active.has(key)) b.active.set(key, { start: t, name });
 	}
 
-	function closeWindow(b: Bucket, key: string, name: string, t = now()): void {
-		let start = b.active.get(key);
-		if (start === undefined && b.active.size === 1) {
+	function closeWindow(b: Bucket, key: string, t = now()): void {
+		let span = b.active.get(key);
+		if (span === undefined && b.active.size === 1) {
 			// Fall back to the single outstanding execution when ids don't correlate.
 			const first = b.active.entries().next();
 			if (!first.done) {
 				key = first.value[0];
-				start = first.value[1];
+				span = first.value[1];
 			}
 		}
-		if (start === undefined) return;
+		if (span === undefined) return;
 		b.active.delete(key);
-		const dur = Math.max(0, t - start);
-		b.totals.set(name, (b.totals.get(name) ?? 0) + dur);
+		const dur = Math.max(0, t - span.start);
+		b.totals.set(span.name, (b.totals.get(span.name) ?? 0) + dur);
 		if (b.active.size === 0 && b.windowStart !== null) {
 			b.unionMs += Math.max(0, t - b.windowStart);
 			b.windowStart = null;
@@ -137,7 +146,7 @@ export default function (pi: ExtensionAPI) {
 	// that opened it; fall back to name classification for unknown keys.
 	function closeByKey(key: string, name: string, t = now()): void {
 		const b = tools.active.has(key) ? tools : subagents.active.has(key) ? subagents : bucketFor(name);
-		closeWindow(b, key, name, t);
+		closeWindow(b, key, t);
 	}
 
 	function bucketUnionMs(b: Bucket, t: number): number {
@@ -232,14 +241,17 @@ export default function (pi: ExtensionAPI) {
 		const e = event as unknown as Record<string, unknown>;
 		if (!isAssistantMessage(e)) return;
 		nMsgEnd += 1;
-		releaseLlm();
+		// Drain (not single release): after_provider_response has been
+		// observed missing while message_end still fires, and requests are
+		// single-flight, so the stream terminator is the reliable closer.
+		drainLlm();
 		refreshActive();
 	});
 
 	pi.on("tool_execution_start", (event, ctx) => {
 		const e = event as unknown as Record<string, unknown>;
 		const b = bucketFor(toolNameOf(e));
-		openWindow(b, toolKey(e), now());
+		openWindow(b, toolKey(e), toolNameOf(e), now());
 		activeCtx = ctx;
 		refreshActive();
 	});
@@ -266,7 +278,7 @@ export default function (pi: ExtensionAPI) {
 		const key = `ext:${d.id}`;
 		const name = typeof d.name === "string" && d.name ? d.name : "external";
 		extNames.set(key, name);
-		openWindow(bucketFor(name), key, now());
+		openWindow(bucketFor(name), key, name, now());
 		refreshActive();
 	});
 
@@ -274,6 +286,10 @@ export default function (pi: ExtensionAPI) {
 		const d = data as { id?: unknown };
 		if (typeof d.id !== "string" || !d.id) return;
 		const key = `ext:${d.id}`;
+		// Ext keys are authoritative (we minted them): an unknown id is a
+		// stray/duplicate end. Returning early avoids the single-window
+		// fallback stealing a real span in closeWindow.
+		if (!extNames.has(key)) return;
 		closeByKey(key, extNames.get(key) ?? "external", now());
 		extNames.delete(key);
 		refreshActive();
@@ -281,12 +297,16 @@ export default function (pi: ExtensionAPI) {
 
 	pi.on("agent_end", (_event, ctx) => {
 		drainLlm();
+		drainBucket(tools);
+		drainBucket(subagents);
 		activeCtx = ctx;
 		refreshActive();
 	});
 
 	pi.on("agent_settled", (_event, ctx) => {
 		drainLlm();
+		drainBucket(tools);
+		drainBucket(subagents);
 		activeCtx = ctx;
 		refreshActive();
 	});
@@ -320,7 +340,7 @@ export default function (pi: ExtensionAPI) {
 					lines.push(`    ${r.name}: ${fmtDur(r.ms)}${r.sub ? " (subagent)" : ""}`);
 				}
 			}
-			lines.push("execution windows + explicit external spans only; parallel spans count once per bucket.");
+			lines.push("execution windows + explicit external spans only; parallel spans count once per bucket; slight bucket overlap possible on dropped provider events.");
 			lines.push(
 				`events: provider ${nBeforeReq}/${nAfterResp} req/resp, assistant msgs ${nMsgStart}/${nMsgEnd} start/end` +
 					(llmWindowStart !== null ? " (llm window OPEN now)" : ""),
