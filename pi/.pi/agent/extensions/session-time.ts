@@ -3,6 +3,17 @@ import type { ExtensionAPI, ExtensionContext } from "@earendil-works/pi-coding-a
 const STATUS_ID = "session-time";
 const TICK_MS = 5_000;
 
+// Tool/span names counted as subagent delegations rather than plain tools.
+// Classification is exclusive: every execution window lands in exactly one bucket.
+const SUBAGENT_TOOLS = new Set(["agent", "subagent", "review"]);
+
+interface Bucket {
+	active: Map<string, number>;
+	unionMs: number;
+	windowStart: number | null;
+	totals: Map<string, number>;
+}
+
 function isStaleCtxError(e: unknown): boolean {
 	const msg = e instanceof Error ? e.message : String(e);
 	return (
@@ -35,11 +46,9 @@ export default function (pi: ExtensionAPI) {
 	let nAfterResp = 0;
 	let nMsgStart = 0;
 	let nMsgEnd = 0;
-	let toolUnionMs = 0;
-	let toolWindowStart: number | null = null;
-	const toolActive = new Map<string, number>();
+	const tools: Bucket = { active: new Map(), unionMs: 0, windowStart: null, totals: new Map() };
+	const subagents: Bucket = { active: new Map(), unionMs: 0, windowStart: null, totals: new Map() };
 	const extNames = new Map<string, string>();
-	const toolTotals = new Map<string, number>();
 	let toolSeq = 0;
 	let timer: ReturnType<typeof setInterval> | undefined;
 	let activeCtx: ExtensionContext | null = null;
@@ -91,42 +100,73 @@ export default function (pi: ExtensionAPI) {
 		return typeof v === "string" && v ? v : "tool";
 	}
 
-	function openToolWindow(key: string, t = now()): void {
-		if (toolActive.size === 0) toolWindowStart = t;
-		toolActive.set(key, t);
+	function isSubagent(name: string): boolean {
+		return SUBAGENT_TOOLS.has(name.toLowerCase());
 	}
 
-	function closeToolWindow(key: string, name: string, t = now()): void {
-		let start = toolActive.get(key);
-		if (start === undefined && toolActive.size === 1) {
+	function bucketFor(name: string): Bucket {
+		return isSubagent(name) ? subagents : tools;
+	}
+
+	function openWindow(b: Bucket, key: string, t = now()): void {
+		if (b.active.size === 0) b.windowStart = t;
+		b.active.set(key, t);
+	}
+
+	function closeWindow(b: Bucket, key: string, name: string, t = now()): void {
+		let start = b.active.get(key);
+		if (start === undefined && b.active.size === 1) {
 			// Fall back to the single outstanding execution when ids don't correlate.
-			const first = toolActive.entries().next();
+			const first = b.active.entries().next();
 			if (!first.done) {
 				key = first.value[0];
 				start = first.value[1];
 			}
 		}
 		if (start === undefined) return;
-		toolActive.delete(key);
+		b.active.delete(key);
 		const dur = Math.max(0, t - start);
-		toolTotals.set(name, (toolTotals.get(name) ?? 0) + dur);
-		if (toolActive.size === 0 && toolWindowStart !== null) {
-			toolUnionMs += Math.max(0, t - toolWindowStart);
-			toolWindowStart = null;
+		b.totals.set(name, (b.totals.get(name) ?? 0) + dur);
+		if (b.active.size === 0 && b.windowStart !== null) {
+			b.unionMs += Math.max(0, t - b.windowStart);
+			b.windowStart = null;
 		}
 	}
 
-	function snapshot(t = now()): { total: number; llm: number; tools: number } {
+	// Close by key identity first so a span always settles in the bucket
+	// that opened it; fall back to name classification for unknown keys.
+	function closeByKey(key: string, name: string, t = now()): void {
+		const b = tools.active.has(key) ? tools : subagents.active.has(key) ? subagents : bucketFor(name);
+		closeWindow(b, key, name, t);
+	}
+
+	function closeLastCall(name: string, t = now()): void {
+		for (const b of [tools, subagents]) {
+			const keys = [...b.active.keys()].filter((k) => k.startsWith("call-"));
+			const last = keys[keys.length - 1];
+			if (last) {
+				closeWindow(b, last, name, t);
+				return;
+			}
+		}
+	}
+
+	function bucketUnionMs(b: Bucket, t: number): number {
+		return b.unionMs + (b.windowStart !== null ? Math.max(0, t - b.windowStart) : 0);
+	}
+
+	function snapshot(t = now()): { total: number; llm: number; subagents: number; tools: number } {
 		const total = Math.max(0, t - sessionStart);
 		const llm = llmMs + (llmWindowStart !== null ? Math.max(0, t - llmWindowStart) : 0);
-		const tools =
-			toolUnionMs + (toolWindowStart !== null ? Math.max(0, t - toolWindowStart) : 0);
-		return { total, llm, tools };
+		return { total, llm, subagents: bucketUnionMs(subagents, t), tools: bucketUnionMs(tools, t) };
 	}
 
 	function statusText(): string {
 		const s = snapshot();
-		return `🧠${fmtDur(s.llm)} 🔧${fmtDur(s.tools)}`;
+		const parts = [`🧠${fmtDur(s.llm)}`];
+		if (s.subagents > 0) parts.push(`🤖${fmtDur(s.subagents)}`);
+		parts.push(`🔧${fmtDur(s.tools)}`);
+		return parts.join(" ");
 	}
 
 	function pushStatus(ctx: ExtensionContext): void {
@@ -153,10 +193,12 @@ export default function (pi: ExtensionAPI) {
 		nMsgStart = 0;
 		nMsgEnd = 0;
 		extNames.clear();
-		toolUnionMs = 0;
-		toolWindowStart = null;
-		toolActive.clear();
-		toolTotals.clear();
+		for (const b of [tools, subagents]) {
+			b.unionMs = 0;
+			b.windowStart = null;
+			b.active.clear();
+			b.totals.clear();
+		}
 		activeCtx = ctx;
 		if (timer) {
 			clearInterval(timer);
@@ -207,54 +249,55 @@ export default function (pi: ExtensionAPI) {
 
 	pi.on("tool_execution_start", (event, ctx) => {
 		const e = event as unknown as Record<string, unknown>;
+		const b = bucketFor(toolNameOf(e));
 		// An execution window supersedes the speculative call-hook window for
 		// the same invocation; drop the oldest unmatched one so per-tool
 		// totals don't count the same call twice.
-		for (const k of toolActive.keys()) {
+		for (const k of b.active.keys()) {
 			if (k.startsWith("call-")) {
-				toolActive.delete(k);
+				b.active.delete(k);
 				break;
 			}
 		}
-		openToolWindow(toolKey(e), now());
+		openWindow(b, toolKey(e), now());
 		activeCtx = ctx;
 		refreshActive();
 	});
 
 	pi.on("tool_execution_end", (event, ctx) => {
 		const e = event as unknown as Record<string, unknown>;
-		closeToolWindow(toolKey(e), toolNameOf(e), now());
+		closeByKey(toolKey(e), toolNameOf(e), now());
 		activeCtx = ctx;
 		refreshActive();
 	});
 
 	// Fallback for runtimes that only emit call/result hooks.
-	pi.on("tool_call", () => {
-		openToolWindow(`call-${toolSeq + 1}`, now());
+	pi.on("tool_call", (event) => {
+		const e = event as unknown as Record<string, unknown>;
+		openWindow(bucketFor(toolNameOf(e)), `call-${toolSeq + 1}`, now());
 		toolSeq += 1;
 		refreshActive();
 	});
 
-	pi.on("tool_result", (_event, ctx) => {
+	pi.on("tool_result", (event, ctx) => {
 		// Close the most recent unmatched call-hook entry, if any.
-		if (toolActive.size > 0) {
-			const keys = [...toolActive.keys()].filter((k) => k.startsWith("call-"));
-			const last = keys[keys.length - 1];
-			if (last) closeToolWindow(last, "tool", now());
-		}
+		const e = event as unknown as Record<string, unknown>;
+		closeLastCall(toolNameOf(e), now());
 		activeCtx = ctx;
 		refreshActive();
 	});
 
 	// Spans reported by other extensions over the inter-extension bus, for
 	// work (e.g. child-process runs from command handlers) that emits no
-	// tool lifecycle events of its own. Counted as tools, unioned as usual.
+	// tool lifecycle events of its own. Routed to subagents or tools by
+	// span name, unioned as usual.
 	pi.events.on("session-time:external-start", (data) => {
 		const d = data as { id?: unknown; name?: unknown };
 		if (typeof d.id !== "string" || !d.id) return;
 		const key = `ext:${d.id}`;
-		extNames.set(key, typeof d.name === "string" && d.name ? d.name : "external");
-		openToolWindow(key, now());
+		const name = typeof d.name === "string" && d.name ? d.name : "external";
+		extNames.set(key, name);
+		openWindow(bucketFor(name), key, now());
 		refreshActive();
 	});
 
@@ -262,7 +305,7 @@ export default function (pi: ExtensionAPI) {
 		const d = data as { id?: unknown };
 		if (typeof d.id !== "string" || !d.id) return;
 		const key = `ext:${d.id}`;
-		closeToolWindow(key, extNames.get(key) ?? "external", now());
+		closeByKey(key, extNames.get(key) ?? "external", now());
 		extNames.delete(key);
 		refreshActive();
 	});
@@ -288,23 +331,27 @@ export default function (pi: ExtensionAPI) {
 	});
 
 	pi.registerCommand("time", {
-		description: "Show session time breakdown (llm vs tools)",
+		description: "Show session time breakdown (llm vs subagents vs tools)",
 		handler: async (_args, ctx) => {
 			const s = snapshot();
-			const active = s.llm + s.tools;
+			const active = s.llm + s.subagents + s.tools;
 			const pct = (v: number) => (active > 0 ? `${Math.round((v / active) * 100)}%` : "—");
 			const lines = [
 				`Session time — ${fmtDur(active)} active of ${fmtDur(s.total)} total`,
-				`  llm   ${fmtDur(s.llm)} (${pct(s.llm)})`,
-				`  tools ${fmtDur(s.tools)} (${pct(s.tools)})`,
+				`  🧠 llm        ${fmtDur(s.llm)} (${pct(s.llm)})`,
+				`  🤖 subagents  ${fmtDur(s.subagents)} (${pct(s.subagents)})`,
+				`  🔧 tools      ${fmtDur(s.tools)} (${pct(s.tools)})`,
 			];
-			if (toolTotals.size > 0) {
+			const rows: Array<{ name: string; ms: number; sub: boolean }> = [];
+			for (const [name, ms] of tools.totals) rows.push({ name, ms, sub: false });
+			for (const [name, ms] of subagents.totals) rows.push({ name, ms, sub: true });
+			if (rows.length > 0) {
 				lines.push("  by tool:");
-				for (const [name, ms] of [...toolTotals.entries()].sort((a, b) => b[1] - a[1])) {
-					lines.push(`    ${name}: ${fmtDur(ms)}`);
+				for (const r of rows.sort((a, b) => b.ms - a.ms)) {
+					lines.push(`    ${r.name}: ${fmtDur(r.ms)}${r.sub ? " (subagent)" : ""}`);
 				}
 			}
-			lines.push("parallel tools count once (union of execution windows).");
+			lines.push("windows are exclusive: parallel spans count once per bucket.");
 			lines.push(
 				`events: provider ${nBeforeReq}/${nAfterResp} req/resp, assistant msgs ${nMsgStart}/${nMsgEnd} start/end` +
 					(llmWindowStart !== null ? " (llm window OPEN now)" : ""),
