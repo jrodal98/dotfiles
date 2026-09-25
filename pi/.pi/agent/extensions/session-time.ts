@@ -140,17 +140,6 @@ export default function (pi: ExtensionAPI) {
 		closeWindow(b, key, name, t);
 	}
 
-	function closeLastCall(name: string, t = now()): void {
-		for (const b of [tools, subagents]) {
-			const keys = [...b.active.keys()].filter((k) => k.startsWith("call-"));
-			const last = keys[keys.length - 1];
-			if (last) {
-				closeWindow(b, last, name, t);
-				return;
-			}
-		}
-	}
-
 	function bucketUnionMs(b: Bucket, t: number): number {
 		return b.unionMs + (b.windowStart !== null ? Math.max(0, t - b.windowStart) : 0);
 	}
@@ -250,15 +239,6 @@ export default function (pi: ExtensionAPI) {
 	pi.on("tool_execution_start", (event, ctx) => {
 		const e = event as unknown as Record<string, unknown>;
 		const b = bucketFor(toolNameOf(e));
-		// An execution window supersedes the speculative call-hook window for
-		// the same invocation; drop the oldest unmatched one so per-tool
-		// totals don't count the same call twice.
-		for (const k of b.active.keys()) {
-			if (k.startsWith("call-")) {
-				b.active.delete(k);
-				break;
-			}
-		}
 		openWindow(b, toolKey(e), now());
 		activeCtx = ctx;
 		refreshActive();
@@ -271,21 +251,10 @@ export default function (pi: ExtensionAPI) {
 		refreshActive();
 	});
 
-	// Fallback for runtimes that only emit call/result hooks.
-	pi.on("tool_call", (event) => {
-		const e = event as unknown as Record<string, unknown>;
-		openWindow(bucketFor(toolNameOf(e)), `call-${toolSeq + 1}`, now());
-		toolSeq += 1;
-		refreshActive();
-	});
-
-	pi.on("tool_result", (event, ctx) => {
-		// Close the most recent unmatched call-hook entry, if any.
-		const e = event as unknown as Record<string, unknown>;
-		closeLastCall(toolNameOf(e), now());
-		activeCtx = ctx;
-		refreshActive();
-	});
+	// NOTE: tool_call/tool_result are deliberately not tracked. Execution
+	// windows above are the canonical span source and explicit external spans
+	// come over the bus; the old speculative call-hook path double-counted
+	// and misattributed parallel calls.
 
 	// Spans reported by other extensions over the inter-extension bus, for
 	// work (e.g. child-process runs from command handlers) that emits no
@@ -351,7 +320,7 @@ export default function (pi: ExtensionAPI) {
 					lines.push(`    ${r.name}: ${fmtDur(r.ms)}${r.sub ? " (subagent)" : ""}`);
 				}
 			}
-			lines.push("windows are exclusive: parallel spans count once per bucket.");
+			lines.push("execution windows + explicit external spans only; parallel spans count once per bucket.");
 			lines.push(
 				`events: provider ${nBeforeReq}/${nAfterResp} req/resp, assistant msgs ${nMsgStart}/${nMsgEnd} start/end` +
 					(llmWindowStart !== null ? " (llm window OPEN now)" : ""),

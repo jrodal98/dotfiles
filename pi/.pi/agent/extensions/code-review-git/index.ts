@@ -178,7 +178,7 @@ async function runReview(opts: RunReviewOptions): Promise<ReviewRunResult> {
 		if (Array.isArray(parsed)) findings = parsed;
 	}
 
-	const totalCost = runs.reduce((sum, r) => sum + (r.result?.usage.cost ?? 0), 0) + (agg?.usage.cost ?? 0);
+	const totalCost = runs.reduce((sum, r) => sum + (r.result?.usage?.cost ?? 0), 0) + (agg?.usage?.cost ?? 0);
 	return { report, findings, runs, totalCost, aggregatorFailed };
 }
 
@@ -247,7 +247,7 @@ function progressLines(runs: ReviewerRun[], phase: string, cost: number): string
 }
 
 function runningCost(runs: ReviewerRun[]): number {
-	return runs.reduce((sum, r) => sum + (r.result?.usage.cost ?? 0), 0);
+	return runs.reduce((sum, r) => sum + (r.result?.usage?.cost ?? 0), 0);
 }
 
 function buildAgentMessage(
