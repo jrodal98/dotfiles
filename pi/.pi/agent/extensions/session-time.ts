@@ -205,6 +205,15 @@ export default function (pi: ExtensionAPI) {
 
 	pi.on("tool_execution_start", (event, ctx) => {
 		const e = event as unknown as Record<string, unknown>;
+		// An execution window supersedes the speculative call-hook window for
+		// the same invocation; drop the oldest unmatched one so per-tool
+		// totals don't count the same call twice.
+		for (const k of toolActive.keys()) {
+			if (k.startsWith("call-")) {
+				toolActive.delete(k);
+				break;
+			}
+		}
 		openToolWindow(toolKey(e), now());
 		activeCtx = ctx;
 		refreshActive();
@@ -259,9 +268,10 @@ export default function (pi: ExtensionAPI) {
 		description: "Show session time breakdown (llm vs tools)",
 		handler: async (_args, ctx) => {
 			const s = snapshot();
-			const pct = (v: number) => (s.total > 0 ? `${Math.round((v / s.total) * 100)}%` : "—");
+			const active = s.llm + s.tools;
+			const pct = (v: number) => (active > 0 ? `${Math.round((v / active) * 100)}%` : "—");
 			const lines = [
-				`Session time — total ${fmtDur(s.total)}`,
+				`Session time — ${fmtDur(active)} active of ${fmtDur(s.total)} total`,
 				`  llm   ${fmtDur(s.llm)} (${pct(s.llm)})`,
 				`  tools ${fmtDur(s.tools)} (${pct(s.tools)})`,
 			];
