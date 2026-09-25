@@ -503,8 +503,13 @@ export default function codeReviewExtension(pi: ExtensionAPI) {
 				ctx.ui,
 				ctx.mode,
 				`Running ${totalRuns} reviewers (${speed})…`,
-				(signal, setMessage) =>
-					runReview({
+				(signal, setMessage) => {
+					// Report the child-pi run to session-time (if loaded): command
+					// handlers emit no tool lifecycle events, so without this the
+					// review would be invisible in the footer.
+					const spanId = `review-${Date.now()}-${Math.floor(Math.random() * 1e6)}`;
+					pi.events.emit("session-time:external-start", { id: spanId, name: "review" });
+					return runReview({
 						cwd: ctx.cwd,
 						target,
 						focusAreas,
@@ -522,7 +527,10 @@ export default function codeReviewExtension(pi: ExtensionAPI) {
 								);
 							}
 						},
+					}).finally(() => {
+						pi.events.emit("session-time:external-end", { id: spanId });
 					}),
+				},
 			);
 			ctx.ui.setWidget("code-review", undefined);
 			if (!runResult.ok) {
