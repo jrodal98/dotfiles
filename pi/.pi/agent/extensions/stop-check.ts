@@ -1,7 +1,8 @@
 /**
  * Stop-check extension: pi port of the Claude Code "Stop" prompt hook.
  *
- * When the agent settles (would stop working), a secondary LLM call evaluates
+ * When the agent settles (would stop working), a secondary LLM call (meta/muse-latest,
+ * or the session model where that is not registered) evaluates
  * the conversation to decide whether the agent is actually finished:
  *   1. All user-requested tasks are complete
  *   2. All skill prompts and user instructions are followed
@@ -44,6 +45,7 @@ const debugLog = (msg: string) => {
 	}
 };
 
+const EVAL_MODEL = { provider: "meta", id: "muse-latest" };
 const MAX_CONSECUTIVE_CONTINUES = 3;
 const EVAL_TIMEOUT_MS = 30_000;
 const MAX_CONVERSATION_CHARS = 40_000;
@@ -285,7 +287,7 @@ export default function (pi: ExtensionAPI) {
 		const conversationText = buildConversationText(entries);
 		if (!conversationText.trim()) return;
 
-		const model = ctx.model;
+		const model = ctx.modelRegistry.find(EVAL_MODEL.provider, EVAL_MODEL.id) ?? ctx.model;
 		if (!model) return;
 
 		// Establish cancellation state before ANY await so user input (or a
@@ -335,7 +337,7 @@ export default function (pi: ExtensionAPI) {
 				.join("\n");
 
 			let verdict = parseVerdict(raw);
-			debugLog(`verdict: ${raw.trim()}`);
+			debugLog(`verdict (${model.provider}/${model.id}): ${raw.trim()}`);
 			if (process.env.STOP_CHECK_FORCE_CONTINUE) {
 				verdict = { ok: false, reason: "forced continue for testing" };
 			}
