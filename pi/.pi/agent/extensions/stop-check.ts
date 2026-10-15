@@ -16,6 +16,7 @@
  * - Max 3 consecutive auto-continues (reset on real user input)
  * - 30s evaluation timeout (fail-open: allow stopping)
  * - Skipped when the last run was aborted (Esc) or errored
+ * - Skipped while pi-subagents background agents are running or queued
  * - In-flight evaluation is cancelled if the user types a new prompt
  *
  * RPC note: the continuation is injected seconds *after* `agent_settled` is
@@ -206,6 +207,18 @@ const getLastAssistantStopReason = (entries: SessionEntry[]): string | undefined
 	return undefined;
 };
 
+// pi-subagents delivers a turn-triggering follow-up when each background agent
+// or workflow finishes, so the agent resumes on its own and the check runs once
+// that work has reported back.
+const SUBAGENT_MANAGER_KEY = Symbol.for("pi-subagents:manager");
+
+const hasBackgroundSubagents = (): boolean => {
+	const manager = (globalThis as Record<symbol, { hasRunning?: () => boolean } | undefined>)[
+		SUBAGENT_MANAGER_KEY
+	];
+	return manager?.hasRunning?.() === true;
+};
+
 // A compaction summary counts as user context: after compaction the original
 // user messages may no longer be present in the context entries.
 const hasUserContext = (entries: SessionEntry[]): boolean =>
@@ -253,6 +266,11 @@ export default function (pi: ExtensionAPI) {
 		// Don't fight the user: skip if the run was aborted (Esc) or errored.
 		const stopReason = getLastAssistantStopReason(entries);
 		if (stopReason === "aborted" || stopReason === "error") return;
+
+		if (hasBackgroundSubagents()) {
+			debugLog("skipping: background subagents still running");
+			return;
+		}
 
 		if (continueCount >= MAX_CONSECUTIVE_CONTINUES) {
 			if (ctx.hasUI) {
