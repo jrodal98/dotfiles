@@ -8,7 +8,9 @@ const TICK_MS = 5_000;
 const SUBAGENT_TOOLS = new Set(["agent", "subagent", "review"]);
 
 interface Bucket {
-	active: Map<string, { start: number; name: string }>;
+	// persist marks spans that outlive the parent turn (background subagent
+	// lifecycle) and must survive the agent_end/agent_settled safety drain.
+	active: Map<string, { start: number; name: string; persist?: boolean }>;
 	unionMs: number;
 	windowStart: number | null;
 	totals: Map<string, number>;
@@ -95,11 +97,20 @@ export default function (pi: ExtensionAPI) {
 
 	// Flush an execution bucket: count the open union up to now and drop
 	// outstanding spans. Safety net for starts without ends (abort/cancel).
-	function drainBucket(b: Bucket, t = now()): void {
-		if (b.windowStart !== null) b.unionMs += Math.max(0, t - b.windowStart);
-		for (const span of b.active.values()) logSpan(b, span.name, span.start, t);
-		b.windowStart = null;
-		b.active.clear();
+	// With keepPersistent, transient spans are closed but persistent ones
+	// (background subagent lifecycles that outlive the turn) keep accruing.
+	function drainBucket(b: Bucket, t = now(), keepPersistent = false): void {
+		for (const [key, span] of b.active) {
+			if (span.persist && keepPersistent) continue;
+			b.active.delete(key);
+			const dur = Math.max(0, t - span.start);
+			b.totals.set(span.name, (b.totals.get(span.name) ?? 0) + dur);
+			logSpan(b, span.name, span.start, t);
+		}
+		if (b.active.size === 0 && b.windowStart !== null) {
+			b.unionMs += Math.max(0, t - b.windowStart);
+			b.windowStart = null;
+		}
 	}
 
 	function isAssistantMessage(event: Record<string, unknown>): boolean {
@@ -129,20 +140,29 @@ export default function (pi: ExtensionAPI) {
 		return isSubagent(name) ? subagents : tools;
 	}
 
-	function openWindow(b: Bucket, key: string, name: string, t = now()): void {
+	function openWindow(b: Bucket, key: string, name: string, t = now(), persist = false): void {
 		if (b.active.size === 0) b.windowStart = t;
 		// Keep the first start on duplicates (e.g. retried start events).
-		if (!b.active.has(key)) b.active.set(key, { start: t, name });
+		if (!b.active.has(key)) b.active.set(key, { start: t, name, persist });
 	}
 
 	function closeWindow(b: Bucket, key: string, t = now()): void {
 		let span = b.active.get(key);
-		if (span === undefined && b.active.size === 1) {
-			// Fall back to the single outstanding execution when ids don't correlate.
-			const first = b.active.entries().next();
-			if (!first.done) {
-				key = first.value[0];
-				span = first.value[1];
+		if (span === undefined) {
+			// Fall back to a lone outstanding transient execution when ids don't
+			// correlate. Persistent spans (background lifecycles) are never
+			// stolen: their ids are authoritative and they outlive tool calls.
+			let loneKey: string | undefined;
+			let transientCount = 0;
+			for (const [k, s] of b.active) {
+				if (!s.persist) {
+					loneKey = k;
+					transientCount += 1;
+				}
+			}
+			if (transientCount === 1 && loneKey !== undefined) {
+				key = loneKey;
+				span = b.active.get(key);
 			}
 		}
 		if (span === undefined) return;
@@ -161,6 +181,18 @@ export default function (pi: ExtensionAPI) {
 	function closeByKey(key: string, name: string, t = now()): void {
 		const b = tools.active.has(key) ? tools : subagents.active.has(key) ? subagents : bucketFor(name);
 		closeWindow(b, key, t);
+	}
+
+	// Display name for a subagent lifecycle span. Keyed by agent id (unique per
+	// run); totals aggregate by type so concurrent same-type agents don't
+	// fragment the /time breakdown.
+	function lifecycleName(data: { type?: unknown }): string {
+		const t = data.type;
+		return typeof t === "string" && t ? `Agent:${t}` : "Agent";
+	}
+
+	function lifecycleKey(data: { id?: unknown }): string | undefined {
+		return typeof data.id === "string" && data.id ? `subagent:${data.id}` : undefined;
 	}
 
 	function logSpan(b: Bucket, name: string, start: number, end: number): void {
@@ -330,10 +362,51 @@ export default function (pi: ExtensionAPI) {
 		refreshActive();
 	});
 
+	// Subagent lifecycle events (emitted by pi-subagents for foreground AND
+	// background agents, including queue-drained starts). Background Agent
+	// tool calls return immediately, so their tool-execution window is ~0s —
+	// these spans capture the real runtime. Foreground runs are contained
+	// within their tool window, so the union absorbs the overlap.
+	// Spans are persistent: background agents routinely outlive the parent
+	// turn, so the agent_end/agent_settled safety drain must not close them.
+	pi.events.on("subagents:started", (data) => {
+		const d = data as { id?: unknown; type?: unknown };
+		const key = lifecycleKey(d);
+		if (!key) return;
+		openWindow(subagents, key, lifecycleName(d), now(), true);
+		refreshActive();
+	});
+
+	function closeLifecycle(data: { id?: unknown; type?: unknown; durationMs?: unknown }): void {
+		const key = lifecycleKey(data);
+		if (!key) return;
+		const t = now();
+		if (subagents.active.has(key)) {
+			closeWindow(subagents, key, t);
+		} else if (typeof data.durationMs === "number" && data.durationMs > 0) {
+			// Missed the start (e.g. late extension load, queue-drain failure
+			// path). Credit the agent's self-reported runtime to the
+			// breakdown without touching the union (overlap with other
+			// buckets can't be reconstructed after the fact).
+			const name = lifecycleName(data);
+			subagents.totals.set(name, (subagents.totals.get(name) ?? 0) + data.durationMs);
+			logSpan(subagents, name, t - data.durationMs, t);
+		}
+		refreshActive();
+	}
+
+	pi.events.on("subagents:completed", (data) => {
+		closeLifecycle(data as { id?: unknown; type?: unknown; durationMs?: unknown });
+	});
+
+	pi.events.on("subagents:failed", (data) => {
+		closeLifecycle(data as { id?: unknown; type?: unknown; durationMs?: unknown });
+	});
+
 	pi.on("agent_end", (_event, ctx) => {
 		drainLlm();
 		drainBucket(tools);
-		drainBucket(subagents);
+		drainBucket(subagents, now(), true);
 		activeCtx = ctx;
 		refreshActive();
 	});
@@ -341,7 +414,7 @@ export default function (pi: ExtensionAPI) {
 	pi.on("agent_settled", (_event, ctx) => {
 		drainLlm();
 		drainBucket(tools);
-		drainBucket(subagents);
+		drainBucket(subagents, now(), true);
 		activeCtx = ctx;
 		refreshActive();
 	});
@@ -384,7 +457,7 @@ export default function (pi: ExtensionAPI) {
 					lines.push(`    ${sp.name} [${sp.sub ? "subagents" : "tools"}] ${fmtClock(sp.start)}–${fmtClock(sp.end)}`);
 				}
 			}
-			lines.push("execution windows + explicit external spans only; parallel spans count once per bucket; slight bucket overlap possible on dropped provider events.");
+			lines.push("execution windows + subagent lifecycles + explicit external spans; parallel spans count once per bucket; buckets can overlap (background agents run alongside the main model).");
 			lines.push(
 				`events: provider ${nBeforeReq}/${nAfterResp} req/resp, assistant msgs ${nMsgStart}/${nMsgEnd} start/end, tool_call ${nToolCall}, tool_result ${nToolResult}, user_bash ${nUserBash}` +
 					(llmWindowStart !== null ? " (llm window OPEN now)" : ""),
